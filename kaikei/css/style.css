@@ -1,0 +1,1640 @@
+/* 基本スタイル - 昭和レトロ風 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'BIZ UDGothic', 'Yu Gothic', 'Meiryo', serif; /* レトロな雰囲気のフォント */
+    line-height: 1.8; /* 行間を広めに */
+    color: #3d2c20; /* 深い茶色のテキスト */
+    background-color: #f0e6d6; /* クリーム色の背景 */
+    background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d6c8b8' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M5 0h1L0 6V5zM6 5v1H5z'/%3E%3C/g%3E%3C/svg%3E"); /* 紙のようなテクスチャ */
+}
+
+.container {
+    max-width: 1200px;
+    margin: 20px auto;
+    background-color: #fdfaf5; /* 明るいクリーム色 */
+    min-height: 90vh;
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.2); /* 柔らかい影 */
+    border: 2px solid #a09080; /* くすんだ境界線 */
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* ヘッダー */
+header {
+    background-color: #5a4a3a; /* 深い茶色のヘッダー */
+    color: #fdfaf5; /* 明るいテキスト */
+    padding: 1.5rem 0;
+    position: relative;
+    border-bottom: 3px solid #8b0000; /* 落ち着いた赤の境界線 */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+header h1 {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 2.8rem;
+    color: #ffd700; /* 金色 */
+    font-family: 'BIZ UDGothic', 'Yu Gothic', 'Meiryo', serif; /* レトロな雰囲気のフォント */
+    letter-spacing: 2px; /* 文字間隔 */
+}
+
+/* ナビゲーション */
+.nav-menu {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    list-style: none;
+    gap: 0.75rem;
+    padding: 0 1.5rem;
+    margin-top: 1rem;
+}
+
+.nav-menu li {
+    margin: 0.25rem;
+}
+
+.nav-link {
+    display: block;
+    padding: 0.8rem 1.5rem;
+    color: #fdfaf5; /* 明るいテキスト */
+    text-decoration: none;
+    background-color: #7a6a5a; /* 落ち着いた茶色 */
+    border-radius: 5px;
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    font-size: 1.05rem;
+    border: 2px outset #9a8a7a; /* 浮き出し効果 */
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+}
+
+.nav-link:hover,
+.nav-link.active {
+    background-color: #a03030; /* 落ち着いた赤 */
+    color: #fdfaf5; /* 明るいテキスト */
+    border-color: #d05050; /* より明るい赤 */
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3); /* 押し込み効果 */
+}
+
+/* メインコンテンツ */
+main {
+    padding: 2.5rem;
+    min-height: calc(100vh - 250px); /* フッターとヘッダーの高さ考慮 */
+}
+
+#content-area {
+    background-color: #fdfaf5; /* 明るいクリーム色 */
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.15); /* 柔らかい影 */
+    border: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+}
+
+/* フォーム */
+.form-container {
+    max-width: 650px;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 1.8rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.8rem;
+    font-weight: bold;
+    color: #4d3c2c; /* 深い茶色 */
+    font-size: 1.1rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.9rem;
+    border: 2px inset #b0a090; /* 埋め込み効果 */
+    border-radius: 4px;
+    font-size: 1.05rem;
+    background-color: #e8e0d0; /* わずかに暗いクリーム色 */
+    color: #3d2c20; /* 深い茶色 */
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group textarea {
+    resize: vertical;
+    height: 120px;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #a03030; /* 落ち着いた赤 */
+    box-shadow: 0 0 0 3px rgba(160, 48, 48, 0.2); /* ぼんやりとした光 */
+}
+
+.form-group input.error,
+.form-group select.error,
+.form-group textarea.error {
+    border-color: #d05050; /* より明るい赤 */
+    box-shadow: 0 0 0 3px rgba(208, 80, 80, 0.3); /* 強い影 */
+}
+
+/* ボタン */
+.btn {
+    display: inline-block;
+    padding: 0.9rem 1.8rem;
+    background-color: #a03030; /* 落ち着いた赤のボタン */
+    color: white;
+    text-decoration: none;
+    border: 2px outset #d05050; /* 浮き出し効果 */
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.05rem;
+    transition: background-color 0.3s, transform 0.1s, box-shadow 0.1s;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+}
+
+.btn:hover {
+    background-color: #d05050; /* より明るい赤 */
+    transform: translateY(-1px); /* わずかに浮き上がる */
+    box-shadow: 3px 3px 8px rgba(0,0,0,0.3);
+}
+
+.btn:active {
+    border: 2px inset #d05050; /* 押し込み効果 */
+    transform: translateY(0); /* 押し込み */
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3);
+}
+
+.btn-secondary {
+    background-color: #7a6a5a; /* 落ち着いた茶色 */
+    border-color: #9a8a7a;
+}
+
+.btn-secondary:hover {
+    background-color: #9a8a7a; /* より明るい茶色 */
+}
+
+.btn-danger {
+    background-color: #8b0000; /* 深い赤 */
+    border-color: #b00000;
+}
+
+.btn-danger:hover {
+    background-color: #b00000; /* より深い赤 */
+}
+
+/* テーブル */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2rem;
+    border: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+}
+
+.data-table th,
+.data-table td {
+    padding: 1rem;
+    text-align: left;
+    border: 1px solid #e8e0d0; /* わずかに暗いクリーム色 */
+    color: #3d2c20; /* 深い茶色 */
+}
+
+.data-table th {
+    background-color: #a09080; /* くすんだ茶色 */
+    font-weight: bold;
+    color: #fdfaf5; /* 明るいテキスト */
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+}
+
+.data-table tr:nth-child(even) {
+    background-color: #f5f0e8; /* 縞模様 */
+}
+
+.data-table tr:hover {
+    background-color: #e8e0d0; /* ホバーで少し暗く */
+}
+
+/* エラーメッセージ */
+.error-message {
+    color: #d05050; /* 落ち着いた赤 */
+    font-size: 1rem;
+    margin-top: 0.6rem;
+    font-weight: bold;
+}
+
+.success-message {
+    color: #408040; /* 落ち着いた緑 */
+    font-size: 1rem;
+    margin-top: 0.6rem;
+    font-weight: bold;
+}
+
+/* モーダル */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6); /* 半透明のオーバーレイ */
+}
+
+.modal-content {
+    background-color: #fdfaf5; /* 明るいクリーム色 */
+    margin: 10% auto;
+    padding: 2.5rem;
+    border-radius: 8px;
+    width: 85%;
+    max-width: 600px;
+    box-shadow: 5px 5px 20px rgba(0,0,0,0.3); /* 柔らかい影 */
+    border: 2px solid #a09080; /* くすんだ境界線 */
+}
+
+.close {
+    color: #888; /* 落ち着いたグレー */
+    float: right;
+    font-size: 36px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #3d2c20; /* 深い茶色 */
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+    .nav-menu {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .nav-link {
+        width: 250px;
+        text-align: center;
+    }
+    
+    main {
+        padding: 1.5rem;
+    }
+    
+    .data-table {
+        font-size: 0.9rem;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .section-controls {
+        justify-content: center;
+    }
+    
+    .filter-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+/* セクションヘッダー */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.2rem;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.section-header h2 {
+    margin: 0;
+    color: #8b0000; /* 落ち着いた赤 */
+    font-size: 2rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+.section-controls {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background-color: #e8e0d0; /* わずかに暗いクリーム色 */
+    padding: 0.8rem 1.5rem;
+    border-radius: 5px;
+    border: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+.filter-controls label {
+    font-weight: bold;
+    font-size: 1rem;
+    margin: 0;
+    color: #4d3c2c; /* 深い茶色 */
+}
+
+.filter-controls select {
+    padding: 0.4rem 0.7rem;
+    border: 1px inset #b0a090; /* 埋め込み効果 */
+    border-radius: 4px;
+    font-size: 1rem;
+    background-color: #f5f0e8; /* 明るいクリーム色 */
+    color: #3d2c20; /* 深い茶色 */
+    min-width: 100px;
+}
+
+/* フォームオーバーレイとモーダル */
+.form-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* より濃い半透明のオーバーレイ */
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem;
+}
+
+.form-modal {
+    background-color: #fdfaf5; /* 明るいクリーム色 */
+    border-radius: 8px;
+    box-shadow: 5px 5px 25px rgba(0, 0, 0, 0.4); /* 強い影 */
+    width: 100%;
+    max-width: 700px;
+    max-height: 95vh;
+    overflow-y: auto;
+    border: 2px solid #a09080; /* くすんだ境界線 */
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.8rem 2.5rem 1.3rem;
+    border-bottom: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+    background-color: #e8e0d0; /* わずかに暗いクリーム色 */
+}
+
+.form-header h3 {
+    margin: 0;
+    color: #8b0000; /* 落ち着いた赤 */
+    font-size: 1.8rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 2.5rem;
+    color: #888; /* 落ち着いたグレー */
+    cursor: pointer;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s;
+}
+
+.close-btn:hover {
+    color: #3d2c20; /* 深い茶色 */
+    background-color: #f0e6d6; /* クリーム色 */
+}
+
+.data-form {
+    padding: 2.5rem;
+}
+
+.form-group {
+    margin-bottom: 2rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    color: #4d3c2c; /* 深い茶色 */
+    font-size: 1.1rem;
+}
+
+.required {
+    color: #d05050; /* 落ち着いた赤 */
+    font-weight: bold;
+}
+
+.field-error {
+    color: #d05050; /* 落ち着いた赤 */
+    font-size: 0.95rem;
+    margin-top: 0.4rem;
+    display: none;
+}
+
+.char-count {
+    text-align: right;
+    font-size: 0.95rem;
+    color: #888; /* 落ち着いたグレー */
+    margin-top: 0.4rem;
+}
+
+.form-errors {
+    background-color: #ffe0e0; /* 薄い赤 */
+    color: #8b0000; /* 深い赤 */
+    padding: 1.5rem;
+    border-radius: 5px;
+    margin-bottom: 2rem;
+    border: 1px solid #d05050; /* 落ち着いた赤 */
+}
+
+.form-errors ul {
+    margin: 0;
+    padding-left: 2rem;
+}
+
+.form-errors li {
+    margin-bottom: 0.4rem;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    padding-top: 1.8rem;
+    border-top: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+}
+
+.btn-primary {
+    background-color: #a03030; /* 落ち着いた赤 */
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #d05050; /* より明るい赤 */
+}
+
+/* メッセージ表示 */
+.message {
+    padding: 1.5rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+    border: 1px solid;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+}
+
+.success-message {
+    background-color: #e0ffe0; /* 薄い緑 */
+    color: #408040; /* 落ち着いた緑 */
+    border-color: #80c080; /* 緑の境界線 */
+}
+
+.error-message {
+    background-color: #ffe0e0; /* 薄い赤 */
+    color: #8b0000; /* 深い赤 */
+    border-color: #d05050; /* 落ち着いた赤 */
+}
+
+.info-message {
+    background-color: #e0e0ff; /* 薄い青 */
+    color: #404080; /* 落ち着いた青 */
+    border-color: #8080c0; /* 青の境界線 */
+}
+
+/* フッター */
+footer {
+    background-color: #5a4a3a; /* 深い茶色のフッター */
+    color: #fdfaf5; /* 明るいテキスト */
+    text-align: center;
+    padding: 1.5rem;
+    margin-top: auto;
+    border-top: 3px solid #8b0000; /* 落ち着いた赤の境界線 */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+/* 収支レポート関連スタイル */
+.report-controls {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.date-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background-color: #e8e0d0; /* わずかに暗いクリーム色 */
+    padding: 0.8rem 1.5rem;
+    border-radius: 5px;
+    border: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+.date-selector label {
+    font-weight: bold;
+    font-size: 1rem;
+    margin: 0;
+    color: #4d3c2c; /* 深い茶色 */
+}
+
+.date-selector select {
+    padding: 0.4rem 0.7rem;
+    border: 1px inset #b0a090; /* 埋め込み効果 */
+    border-radius: 4px;
+    font-size: 1rem;
+    background-color: #f5f0e8; /* 明るいクリーム色 */
+    color: #3d2c20; /* 深い茶色 */
+    min-width: 100px;
+}
+
+/* 月別レポート */
+.monthly-report {
+    background-color: #fdfaf5; /* 明るいクリーム色 */
+    border-radius: 8px;
+    padding: 2.2rem;
+    margin-bottom: 2.5rem;
+    border: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+}
+
+.report-header {
+    margin-bottom: 2.5rem;
+}
+
+.report-header h3 {
+    color: #8b0000; /* 落ち着いた赤 */
+    margin-bottom: 1.25rem;
+    font-size: 2rem;
+}
+
+.report-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    padding: 2rem;
+    border-radius: 8px;
+    border: 2px solid #d6c8b8; /* 落ち着いた境界線 */
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1);
+}
+
+.report-summary.profit {
+    background-color: #e0ffe0; /* 薄い緑 */
+    border-color: #80c080; /* 緑の境界線 */
+}
+
+.report-summary.deficit {
+    background-color: #ffe0e0; /* 薄い赤 */
+    border-color: #d05050; /* 落ち着いた赤 */
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+}
+
+.summary-item .label {
+    font-weight: bold;
+    color: #4d3c2c; /* 深い茶色 */
+}
+
+.summary-item .value {
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+.summary-item .value.income {
+    color: #408040; /* 落ち着いた緑 */
+}
+
+.summary-item .value.expense {
+    color: #a03030; /* 落ち着いた赤 */
+}
+
+.summary-item .value.profit {
+    color: #408040; /* 落ち着いた緑 */
+}
+
+.summary-item .value.deficit {
+    color: #d05050; /* 落ち着いた赤 */
+}
+
+.profit-item {
+    border-top: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+    padding-top: 1.5rem;
+    margin-top: 1rem;
+}
+
+/* 赤字警告 */
+.deficit-warning {
+    margin: 2.5rem 0;
+    padding: 2rem;
+    border-radius: 8px;
+    border-left: 6px solid;
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+}
+
+.deficit-warning.low {
+    background-color: #fffacd; /* 薄い黄色 */
+    border-color: #d0a000; /* 落ち着いた黄色 */
+    color: #806000; /* 暗い黄色 */
+}
+
+.deficit-warning.medium {
+    background-color: #ffe0e0; /* 薄い赤 */
+    border-color: #d05050; /* 落ち着いた赤 */
+    color: #8b0000; /* 深い赤 */
+}
+
+.deficit-warning.high {
+    background-color: #ffe0e0; /* 薄い赤 */
+    border-color: #b00000; /* より深い赤 */
+    color: #8b0000; /* 深い赤 */
+}
+
+.warning-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.warning-icon {
+    font-size: 1.8rem;
+}
+
+.warning-message {
+    font-weight: bold;
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.warning-details {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.recommendations {
+    margin-top: 1.8rem;
+}
+
+.recommendations h4 {
+    color: #8b0000; /* 落ち着いた赤 */
+    margin-bottom: 0.8rem;
+    font-size: 1.2rem;
+}
+
+.recommendations ul {
+    margin-left: 2rem;
+}
+
+.recommendations li {
+    margin-bottom: 0.4rem;
+}
+
+/* カテゴリー別内訳 */
+.category-breakdown {
+    margin-top: 2.8rem;
+}
+
+.category-breakdown h4 {
+    color: #8b0000; /* 落ち着いた赤 */
+    margin-bottom: 1.5rem;
+    font-size: 1.4rem;
+}
+
+.breakdown-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 2.8rem;
+}
+
+.breakdown-section h5 {
+    color: #4d3c2c; /* 深い茶色 */
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 2px solid #d6c8b8; /* 落ち着いた境界線 */
+    font-size: 1.2rem;
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background-color: #e8e0d0; /* わずかに暗いクリーム色 */
+    border-radius: 5px;
+    border-left: 5px solid #a09080; /* くすんだ境界線 */
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+.breakdown-item:hover {
+    background-color: #f0e6d6; /* ホバーで少し明るく */
+}
+
+.category-name {
+    font-weight: bold;
+    color: #3d2c20; /* 深い茶色 */
+    flex: 1;
+    font-size: 1.05rem;
+}
+
+.category-amount {
+    font-weight: bold;
+    margin-right: 1.5rem;
+    font-size: 1.05rem;
+}
+
+.category-percentage {
+    color: #888; /* 落ち着いたグレー */
+    font-size: 0.95rem;
+    margin-right: 0.75rem;
+}
+
+.category-count {
+    color: #888; /* 落ち着いたグレー */
+    font-size: 0.85rem;
+}
+
+/* 年間レポート */
+.yearly-report {
+    background-color: #fdfaf5; /* 明るいクリーム色 */
+    border-radius: 8px;
+    padding: 2.2rem;
+    border: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+}
+
+.yearly-summary {
+    padding: 2.5rem;
+    border-radius: 8px;
+    border: 2px solid #d6c8b8; /* 落ち着いた境界線 */
+    margin-bottom: 2.8rem;
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1);
+}
+
+.yearly-summary.profit {
+    background-color: #e0ffe0; /* 薄い緑 */
+    border-color: #80c080; /* 緑の境界線 */
+}
+
+.yearly-summary.deficit {
+    background-color: #ffe0e0; /* 薄い赤 */
+    border-color: #d05050; /* 落ち着いた赤 */
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.monthly-breakdown {
+    margin-top: 2.8rem;
+}
+
+.monthly-breakdown h4 {
+    color: #8b0000; /* 落ち着いた赤 */
+    margin-bottom: 1.5rem;
+    font-size: 1.4rem;
+}
+
+.monthly-table-container {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+}
+
+.monthly-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.monthly-table th {
+    background-color: #a09080; /* くすんだ茶色 */
+    color: #fdfaf5; /* 明るいテキスト */
+    padding: 1.5rem;
+    text-align: left;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+}
+
+.monthly-table td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e8e0d0; /* わずかに暗いクリーム色 */
+    color: #3d2c20; /* 深い茶色 */
+}
+
+.monthly-row:hover {
+    background-color: #f0e6d6; /* ホバーで少し明るく */
+}
+
+.monthly-row.profit {
+    border-left: 5px solid #408040; /* 落ち着いた緑 */
+}
+
+.monthly-row.deficit {
+    border-left: 5px solid #d05050; /* 落ち着いた赤 */
+}
+
+.amount {
+    text-align: right;
+    font-weight: bold;
+}
+
+.amount.income {
+    color: #408040; /* 落ち着いた緑 */
+}
+
+.amount.expense {
+    color: #a03030; /* 落ち着いた赤 */
+}
+
+.amount.profit {
+    color: #408040; /* 落ち着いた緑 */
+}
+
+.amount.deficit {
+    color: #d05050; /* 落ち着いた赤 */
+}
+
+.percentage {
+    text-align: right;
+    font-weight: bold;
+}
+
+.status {
+    text-align: center;
+    font-weight: bold;
+    padding: 0.4rem 0.8rem;
+    border-radius: 5px;
+}
+
+.status-profit {
+    background-color: #e0ffe0; /* 薄い緑 */
+    color: #408040; /* 落ち着いた緑 */
+}
+
+.status-deficit {
+    background-color: #ffe0e0; /* 薄い赤 */
+    color: #8b0000; /* 深い赤 */
+}
+
+/* データなしメッセージ */
+.no-data-message {
+    text-align: center;
+    padding: 3rem;
+    color: #888; /* 落ち着いたグレー */
+    background-color: #e8e0d0; /* わずかに暗いクリーム色 */
+    border-radius: 8px;
+    margin-top: 3rem;
+    border: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+.no-data-message p {
+    margin-bottom: 0.75rem;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .report-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .date-selector {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .breakdown-grid {
+        grid-template-columns: 1fr;
+        gap: 1.8rem;
+    }
+    
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .monthly-table {
+        font-size: 0.9rem;
+    }
+    
+    .monthly-table th,
+    .monthly-table td {
+        padding: 0.75rem;
+    }
+    
+    .breakdown-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+    }
+    
+    .category-amount,
+    .category-percentage,
+    .category-count {
+        margin-right: 0;
+    }
+}
+/* 
+グラフ表示スタイル */
+.charts-section {
+    margin-top: 3rem;
+    padding-top: 3rem;
+    border-top: 2px solid #d6c8b8; /* 落ち着いた境界線 */
+}
+
+.charts-section h4 {
+    color: #8b0000; /* 落ち着いた赤 */
+    margin-bottom: 2rem;
+    font-size: 1.5rem;
+}
+
+.charts-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    margin-bottom: 3rem;
+}
+
+.chart-item {
+    background-color: #e8e0d0; /* わずかに暗いクリーム色 */
+    border-radius: 8px;
+    padding: 2rem;
+    border: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 380px;
+    width: 100%;
+}
+
+.chart-wrapper canvas {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .charts-container {
+        grid-template-columns: 1fr;
+        gap: 1.8rem;
+    }
+    
+    .chart-wrapper {
+        height: 320px;
+    }
+    
+    .chart-item {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .chart-wrapper {
+        height: 280px;
+    }
+}
+
+/* バックアップ管理スタイル */
+.backup-section {
+    margin-bottom: 3rem;
+}
+
+.backup-section h3 {
+    color: #8b0000; /* 落ち着いた赤 */
+    margin-bottom: 1.5rem;
+    font-size: 1.6rem;
+    border-bottom: 2px solid #a03030; /* 落ち着いた赤の境界線 */
+    padding-bottom: 0.8rem;
+}
+
+.backup-list {
+    background-color: #fdfaf5; /* 明るいクリーム色 */
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+    border: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+}
+
+.backup-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.backup-table th {
+    background-color: #a09080; /* くすんだ茶色 */
+    color: #fdfaf5; /* 明るいテキスト */
+    padding: 1.5rem;
+    text-align: left;
+    font-weight: 600;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+}
+
+.backup-table td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e8e0d0; /* わずかに暗いクリーム色 */
+    color: #3d2c20; /* 深い茶色 */
+}
+
+.backup-row:hover {
+    background-color: #f0e6d6; /* ホバーで少し明るく */
+}
+
+.backup-date {
+    font-weight: 500;
+    color: #4d3c2c; /* 深い茶色 */
+}
+
+.backup-type {
+    text-align: center;
+}
+
+.type-badge {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    border-radius: 18px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    border: 1px solid;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+}
+
+.type-badge.backup-manual {
+    background-color: #a03030; /* 落ち着いた赤 */
+    color: white;
+    border-color: #d05050;
+}
+
+.type-badge.backup-auto {
+    background-color: #7a6a5a; /* 落ち着いた茶色 */
+    color: white;
+    border-color: #9a8a7a;
+}
+
+.type-badge.backup-imported {
+    background-color: #604080; /* 落ち着いた紫 */
+    color: white;
+    border-color: #8060a0;
+}
+
+.backup-description {
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.backup-count,
+.backup-size {
+    text-align: right;
+    font-weight: 500;
+}
+
+.backup-actions {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.backup-actions .btn {
+    margin: 0 0.4rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+}
+
+/* モーダルスタイル */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* 半透明のオーバーレイ */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: #fdfaf5; /* 明るいクリーム色 */
+    border-radius: 8px;
+    box-shadow: 5px 5px 25px rgba(0, 0, 0, 0.4); /* 強い影 */
+    max-width: 600px;
+    width: 90%;
+    max-height: 95vh;
+    overflow-y: auto;
+    border: 2px solid #a09080; /* くすんだ境界線 */
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.8rem;
+    border-bottom: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+    background-color: #e8e0d0; /* わずかに暗いクリーム色 */
+    border-radius: 8px 8px 0 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #8b0000; /* 落ち着いた赤 */
+    font-size: 1.5rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 2.2rem;
+    cursor: pointer;
+    color: #888; /* 落ち着いたグレー */
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+    background-color: #f0e6d6; /* クリーム色 */
+    color: #3d2c20; /* 深い茶色 */
+}
+
+.modal-body {
+    padding: 1.8rem;
+}
+
+.form-help {
+    display: block;
+    margin-top: 0.75rem;
+    color: #888; /* 落ち着いたグレー */
+    font-size: 0.95rem;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.8rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+}
+
+.no-data {
+    text-align: center;
+    padding: 3rem;
+    color: #888; /* 落ち着いたグレー */
+    font-style: italic;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .backup-table {
+        font-size: 0.9rem;
+    }
+    
+    .backup-table th,
+    .backup-table td {
+        padding: 0.75rem;
+    }
+    
+    .backup-description {
+        max-width: 180px;
+    }
+    
+    .backup-actions .btn {
+        padding: 0.35rem 0.7rem;
+        font-size: 0.8rem;
+        margin: 0.2rem;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 1.5rem;
+    }
+    
+    .modal-header,
+    .modal-body {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .backup-table {
+        font-size: 0.85rem;
+    }
+    
+    .backup-description {
+        max-width: 130px;
+    }
+    
+    .backup-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+    
+    .backup-actions .btn {
+        width: 100%;
+        margin: 0;
+    }
+}
+/* 
+保存状態表示スタイル */
+.save-status {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    z-index: 100;
+    border: 1px solid;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+}
+
+.save-status-icon {
+    font-size: 1.2rem;
+}
+
+.save-status.status-ready {
+    background-color: #e8e0d0; /* わずかに暗いクリーム色 */
+    color: #4d3c2c; /* 深い茶色 */
+    border-color: #d6c8b8;
+}
+
+.save-status.status-saving {
+    background-color: #fffacd; /* 薄い黄色 */
+    color: #806000; /* 暗い黄色 */
+    border-color: #d0a000;
+    animation: pulse 1.5s infinite;
+}
+
+.save-status.status-saved {
+    background-color: #e0ffe0; /* 薄い緑 */
+    color: #408040; /* 落ち着いた緑 */
+    border-color: #80c080;
+}
+
+.save-status.status-unsaved {
+    background-color: #ffe0e0; /* 薄い赤 */
+    color: #8b0000; /* 深い赤 */
+    border-color: #d05050;
+    animation: blink 2s infinite;
+}
+
+.save-status.status-error {
+    background-color: #b00000; /* より深い赤 */
+    color: white;
+    border-color: #d05050;
+    cursor: pointer;
+}
+
+.save-status.status-loading {
+    background-color: #d6c8b8; /* 落ち着いた境界線 */
+    color: #5a4a3a; /* 深い茶色 */
+    border-color: #a09080;
+}
+
+/* アニメーション */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.6; }
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .save-status {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin: 0.75rem auto;
+        justify-content: center;
+        font-size: 0.9rem;
+        padding: 0.6rem 1.2rem;
+    }
+    
+    header {
+        position: relative;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .save-status {
+        font-size: 0.8rem;
+        padding: 0.5rem 1rem;
+        gap: 0.5rem;
+    }
+    
+    .save-status-icon {
+        font-size: 1.1rem;
+    }
+}
+/*
+ * CSVエクスポート関連スタイル */
+.export-controls {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.export-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-toggle {
+    background-color: #a03030; /* 落ち着いた赤 */
+    color: white;
+    border: 2px outset #d05050; /* 浮き出し効果 */
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.05rem;
+    transition: background-color 0.3s, box-shadow 0.1s;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+}
+
+.dropdown-toggle:hover {
+    background-color: #d05050; /* より明るい赤 */
+    box-shadow: 3px 3px 8px rgba(0,0,0,0.3);
+}
+
+.dropdown-toggle:active {
+    border: 2px inset #d05050; /* 押し込み効果 */
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #fdfaf5; /* 明るいクリーム色 */
+    border: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+    border-radius: 5px;
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.15); /* 柔らかい影 */
+    z-index: 1000;
+    min-width: 240px;
+    margin-top: 4px;
+}
+
+.dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #3d2c20; /* 深い茶色 */
+    transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #e8e0d0; /* わずかに暗いクリーム色 */
+}
+
+.dropdown-item:first-child {
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+.dropdown-item:last-child {
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+/* 期間指定エクスポートフォーム */
+.date-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.date-input-group select {
+    flex: 0 0 auto;
+    min-width: 100px;
+}
+
+.date-input-group span {
+    font-size: 1rem;
+    color: #4d3c2c; /* 深い茶色 */
+}
+
+/* レポートコントロールの調整 */
+.report-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.date-selector {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+    .report-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .export-controls {
+        justify-content: center;
+    }
+    
+    .dropdown-menu {
+        position: static;
+        box-shadow: none;
+        border: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+        margin-top: 0.75rem;
+    }
+    
+    .date-input-group {
+        justify-content: center;
+    }
+}
+/* 
+ヘッダーコントロール */
+.header-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 0 2rem;
+}
+
+.global-date-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background-color: rgba(253, 250, 245, 0.1); /* わずかに透明なクリーム色 */
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    border: 1px solid rgba(214, 200, 184, 0.3); /* 落ち着いた透明な境界線 */
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+.global-date-selector label {
+    color: #fdfaf5; /* 明るいテキスト */
+    font-size: 1rem;
+    font-weight: bold;
+    margin: 0;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+}
+
+.global-date-selector select {
+    padding: 0.4rem 0.7rem;
+    border: 1px inset #b0a090; /* 埋め込み効果 */
+    border-radius: 4px;
+    background-color: #f5f0e8; /* 明るいクリーム色 */
+    color: #3d2c20; /* 深い茶色 */
+    font-size: 1rem;
+    min-width: 100px;
+}
+
+.global-date-selector select:focus {
+    outline: none;
+    border-color: #a03030; /* 落ち着いた赤 */
+    box-shadow: 0 0 0 2px rgba(160, 48, 48, 0.2); /* ぼんやりとした光 */
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+    .header-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .global-date-selector {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}
+/*
+ 現在の日付表示 */
+.current-date-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background-color: #e8e0d0; /* わずかに暗いクリーム色 */
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    border: 1px solid #d6c8b8; /* 落ち着いた境界線 */
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+.date-label {
+    font-size: 1rem;
+    color: #4d3c2c; /* 深い茶色 */
+    font-weight: bold;
+}
+
+.date-value {
+    font-size: 1.1rem;
+    color: #8b0000; /* 落ち着いた赤 */
+    font-weight: bold;
+    background-color: #ffe0e0; /* 薄い赤 */
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    border: 1px solid #d05050; /* 落ち着いた赤の境界線 */
+}
+
+.record-count {
+    font-size: 1rem;
+    color: #888; /* 落ち着いたグレー */
+    font-style: italic;
+}
+
+/* セクションコントロールの調整 */
+.section-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+/* レポートコントロールの調整 */
+.report-controls .current-date-display {
+    flex: 1;
+}
+
+.report-controls .current-date-display button {
+    margin-left: 1.5rem;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+    .current-date-display {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    
+    .current-date-display button {
+        margin-left: 0 !important;
+        margin-top: 0.75rem;
+    }
+    
+    .section-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+.form-control-lg {
+    padding: 1.2rem;
+    font-size: 1.35rem;
+}

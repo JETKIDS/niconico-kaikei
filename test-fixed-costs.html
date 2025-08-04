@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>固定費管理テスト</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .required { color: red; }
+        .btn { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .field-error { color: red; font-size: 12px; margin-top: 5px; display: none; }
+        .char-count { font-size: 12px; color: #666; text-align: right; }
+        .message { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success-message { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error-message { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>固定費管理フォームテスト</h1>
+    
+    <div id="message-area"></div>
+    
+    <form id="fixed-costs-form">
+        <div class="form-group">
+            <label for="year">年 <span class="required">*</span></label>
+            <input type="number" id="year" name="year" min="2000" max="2100" required>
+            <div class="field-error" id="year-error"></div>
+        </div>
+        
+        <div class="form-group">
+            <label for="month">月 <span class="required">*</span></label>
+            <select id="month" name="month" required>
+                <option value="">選択してください</option>
+                <option value="1">1月</option>
+                <option value="2">2月</option>
+                <option value="3">3月</option>
+                <option value="4">4月</option>
+                <option value="5">5月</option>
+                <option value="6">6月</option>
+                <option value="7">7月</option>
+                <option value="8">8月</option>
+                <option value="9">9月</option>
+                <option value="10">10月</option>
+                <option value="11">11月</option>
+                <option value="12">12月</option>
+            </select>
+            <div class="field-error" id="month-error"></div>
+        </div>
+        
+        <div class="form-group">
+            <label for="category">固定費カテゴリー <span class="required">*</span></label>
+            <select id="category" name="category" required>
+                <option value="">選択してください</option>
+                <option value="家賃">家賃</option>
+                <option value="光熱費">光熱費</option>
+                <option value="通信費">通信費</option>
+                <option value="保険料">保険料</option>
+                <option value="その他">その他</option>
+            </select>
+            <div class="field-error" id="category-error"></div>
+        </div>
+        
+        <div class="form-group">
+            <label for="amount">金額 <span class="required">*</span></label>
+            <input type="number" id="amount" name="amount" min="0" step="1" required>
+            <div class="field-error" id="amount-error"></div>
+        </div>
+        
+        <div class="form-group">
+            <label for="note">備考</label>
+            <textarea id="note" name="note" maxlength="200" rows="3" placeholder="備考を入力してください（200文字以内）"></textarea>
+            <div class="field-error" id="note-error"></div>
+            <div class="char-count">
+                <span id="note-count">0</span>/200文字
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="resetForm()">リセット</button>
+            <button type="submit" class="btn btn-primary">追加</button>
+        </div>
+    </form>
+    
+    <div id="data-display">
+        <h2>保存されたデータ</h2>
+        <div id="saved-data"></div>
+    </div>
+
+    <script src="kaikei/js/data-manager.js"></script>
+    <script>
+        let dataManager;
+        let savedData = [];
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', async () => {
+            dataManager = new DataManager();
+            await dataManager.loadData();
+            
+            // 現在の年月をデフォルト値として設定
+            const currentDate = new Date();
+            document.getElementById('year').value = currentDate.getFullYear();
+            document.getElementById('month').value = currentDate.getMonth() + 1;
+            
+            // 文字数カウント設定
+            const noteField = document.getElementById('note');
+            const noteCount = document.getElementById('note-count');
+            
+            noteField.addEventListener('input', () => {
+                const count = noteField.value.length;
+                noteCount.textContent = count;
+                noteCount.parentElement.style.color = count > 200 ? '#e74c3c' : '#666';
+            });
+            
+            // フォーム送信イベント
+            document.getElementById('fixed-costs-form').addEventListener('submit', handleSubmit);
+            
+            // 既存データの表示
+            displaySavedData();
+        });
+
+        function handleSubmit(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (key === 'year' || key === 'month' || key === 'amount') {
+                    data[key] = value ? Number(value) : null;
+                } else {
+                    data[key] = value.trim();
+                }
+            }
+            
+            // 空の備考は削除
+            if (!data.note) {
+                delete data.note;
+            }
+            
+            try {
+                // バリデーション
+                const validation = dataManager.validateRecord('fixedCosts', data);
+                if (!validation.isValid) {
+                    showMessage('バリデーションエラー: ' + validation.errors.join(', '), 'error');
+                    return;
+                }
+                
+                // データ保存
+                const record = dataManager.addRecord('fixedCosts', data);
+                showMessage('固定費データを追加しました', 'success');
+                
+                // フォームリセット
+                resetForm();
+                
+                // データ表示更新
+                displaySavedData();
+                
+            } catch (error) {
+                showMessage('エラー: ' + error.message, 'error');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('fixed-costs-form').reset();
+            const currentDate = new Date();
+            document.getElementById('year').value = currentDate.getFullYear();
+            document.getElementById('month').value = currentDate.getMonth() + 1;
+            document.getElementById('note-count').textContent = '0';
+            clearAllErrors();
+        }
+
+        function clearAllErrors() {
+            const errorElements = document.querySelectorAll('.field-error');
+            errorElements.forEach(el => el.style.display = 'none');
+        }
+
+        function showMessage(message, type) {
+            const messageArea = document.getElementById('message-area');
+            messageArea.innerHTML = `<div class="message ${type}-message">${message}</div>`;
+            
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 3000);
+        }
+
+        function displaySavedData() {
+            const fixedCostsData = dataManager.getDataByCategory('fixedCosts');
+            const savedDataDiv = document.getElementById('saved-data');
+            
+            if (fixedCostsData.length === 0) {
+                savedDataDiv.innerHTML = '<p>保存されたデータはありません。</p>';
+                return;
+            }
+            
+            let html = '<table border="1" style="width: 100%; border-collapse: collapse;"><thead><tr>';
+            html += '<th>年</th><th>月</th><th>カテゴリー</th><th>金額</th><th>備考</th><th>操作</th>';
+            html += '</tr></thead><tbody>';
+            
+            fixedCostsData.forEach(record => {
+                html += '<tr>';
+                html += `<td>${record.year}</td>`;
+                html += `<td>${record.month}月</td>`;
+                html += `<td>${record.category}</td>`;
+                html += `<td>${record.amount.toLocaleString()}円</td>`;
+                html += `<td>${record.note || ''}</td>`;
+                html += `<td><button onclick="deleteRecord('${record.id}')">削除</button></td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            savedDataDiv.innerHTML = html;
+        }
+
+        function deleteRecord(id) {
+            if (confirm('このレコードを削除しますか？')) {
+                try {
+                    dataManager.deleteRecord('fixedCosts', id);
+                    showMessage('レコードを削除しました', 'success');
+                    displaySavedData();
+                } catch (error) {
+                    showMessage('削除に失敗しました: ' + error.message, 'error');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

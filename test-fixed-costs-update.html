@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>諸経費機能テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>諸経費機能テスト</h1>
+        </header>
+        
+        <main>
+            <div id="content-area">
+                <h2>諸経費（旧：固定費管理）のカテゴリーテスト</h2>
+                
+                <div class="test-section">
+                    <h3>新しいカテゴリー一覧</h3>
+                    <div class="category-list">
+                        <ul>
+                            <li>家賃</li>
+                            <li>光熱費</li>
+                            <li>水道代</li>
+                            <li>電気代</li>
+                            <li>ガス代</li>
+                            <li>通信費</li>
+                            <li>電話代</li>
+                            <li>インターネット代</li>
+                            <li>保険料</li>
+                            <li>火災保険</li>
+                            <li>損害保険</li>
+                            <li>車両費</li>
+                            <li>ガソリン代</li>
+                            <li>駐車場代</li>
+                            <li>事務用品費</li>
+                            <li>消耗品費</li>
+                            <li>修繕費</li>
+                            <li>清掃費</li>
+                            <li>その他</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="test-section">
+                    <h3>テストデータ作成</h3>
+                    <button class="btn btn-primary" onclick="createTestFixedCostsData()">諸経費テストデータを作成</button>
+                    <div id="test-data-status"></div>
+                </div>
+                
+                <div class="test-section">
+                    <h3>データ表示テスト</h3>
+                    <div id="fixed-costs-table"></div>
+                </div>
+                
+                <div class="test-section">
+                    <h3>CSVエクスポートテスト</h3>
+                    <button class="btn btn-secondary" onclick="testFixedCostsCSVExport()">諸経費データCSVエクスポート</button>
+                    <div id="csv-test-result"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="kaikei/js/data-manager.js"></script>
+    <script src="kaikei/js/ui-manager.js"></script>
+    <script>
+        let dataManager;
+        let uiManager;
+        
+        // 初期化
+        async function init() {
+            dataManager = new DataManager();
+            await dataManager.loadData();
+            uiManager = new UIManager(dataManager);
+        }
+        
+        // 諸経費テストデータ作成
+        async function createTestFixedCostsData() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth() + 1;
+                
+                // 様々なカテゴリーの諸経費データを作成
+                const testData = [
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        category: '家賃',
+                        amount: 120000,
+                        note: '店舗家賃'
+                    },
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        category: '電気代',
+                        amount: 25000,
+                        note: '店舗電気代'
+                    },
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        category: '水道代',
+                        amount: 8000,
+                        note: '店舗水道代'
+                    },
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        category: 'ガス代',
+                        amount: 12000,
+                        note: '店舗ガス代'
+                    },
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        category: 'インターネット代',
+                        amount: 6000,
+                        note: '店舗インターネット回線'
+                    },
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        category: '火災保険',
+                        amount: 15000,
+                        note: '店舗火災保険料'
+                    },
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        category: 'ガソリン代',
+                        amount: 18000,
+                        note: '配達車両ガソリン代'
+                    },
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        category: '駐車場代',
+                        amount: 10000,
+                        note: '配達車両駐車場代'
+                    },
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        category: '事務用品費',
+                        amount: 3000,
+                        note: '帳簿・文房具等'
+                    },
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        category: '清掃費',
+                        amount: 5000,
+                        note: '店舗清掃用品'
+                    }
+                ];
+                
+                for (const data of testData) {
+                    dataManager.addRecord('fixedCosts', data);
+                }
+                
+                document.getElementById('test-data-status').innerHTML = 
+                    '<div class="success-message">諸経費テストデータを作成しました（10件）</div>';
+                
+                // データ表示を更新
+                displayFixedCostsData();
+                
+            } catch (error) {
+                document.getElementById('test-data-status').innerHTML = 
+                    `<div class="error-message">テストデータ作成エラー: ${error.message}</div>`;
+            }
+        }
+        
+        // 諸経費データ表示
+        function displayFixedCostsData() {
+            const fixedCostsData = dataManager.getDataByCategory('fixedCosts');
+            let tableHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>年</th>
+                            <th>月</th>
+                            <th>カテゴリー</th>
+                            <th>金額</th>
+                            <th>備考</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            if (fixedCostsData.length === 0) {
+                tableHTML += '<tr><td colspan="5">データがありません</td></tr>';
+            } else {
+                // カテゴリー別に集計
+                const categoryTotals = {};
+                let grandTotal = 0;
+                
+                fixedCostsData.forEach(record => {
+                    tableHTML += `
+                        <tr>
+                            <td>${record.year}</td>
+                            <td>${record.month}</td>
+                            <td>${record.category}</td>
+                            <td>${record.amount ? record.amount.toLocaleString() + '円' : ''}</td>
+                            <td>${record.note || ''}</td>
+                        </tr>
+                    `;
+                    
+                    // カテゴリー別集計
+                    if (!categoryTotals[record.category]) {
+                        categoryTotals[record.category] = 0;
+                    }
+                    categoryTotals[record.category] += record.amount || 0;
+                    grandTotal += record.amount || 0;
+                });
+                
+                // 合計行を追加
+                tableHTML += `
+                    <tr style="background-color: #f8f9fa; font-weight: bold;">
+                        <td colspan="3">合計</td>
+                        <td>${grandTotal.toLocaleString()}円</td>
+                        <td></td>
+                    </tr>
+                `;
+            }
+            
+            tableHTML += '</tbody></table>';
+            
+            // カテゴリー別集計も表示
+            if (fixedCostsData.length > 0) {
+                const categoryTotals = {};
+                fixedCostsData.forEach(record => {
+                    if (!categoryTotals[record.category]) {
+                        categoryTotals[record.category] = 0;
+                    }
+                    categoryTotals[record.category] += record.amount || 0;
+                });
+                
+                tableHTML += '<h4>カテゴリー別集計</h4>';
+                tableHTML += '<table class="data-table"><thead><tr><th>カテゴリー</th><th>金額</th></tr></thead><tbody>';
+                
+                Object.entries(categoryTotals)
+                    .sort((a, b) => b[1] - a[1]) // 金額の降順でソート
+                    .forEach(([category, amount]) => {
+                        tableHTML += `
+                            <tr>
+                                <td>${category}</td>
+                                <td>${amount.toLocaleString()}円</td>
+                            </tr>
+                        `;
+                    });
+                
+                tableHTML += '</tbody></table>';
+            }
+            
+            document.getElementById('fixed-costs-table').innerHTML = tableHTML;
+        }
+        
+        // CSVエクスポートテスト
+        async function testFixedCostsCSVExport() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth() + 1;
+                
+                const result = dataManager.exportToCSV({
+                    exportType: 'monthly',
+                    year: currentYear,
+                    month: currentMonth
+                });
+                
+                document.getElementById('csv-test-result').innerHTML = `
+                    <div class="success-message">
+                        CSVエクスポート成功！<br>
+                        ファイル名: ${result.filename}<br>
+                        レコード数: ${result.recordCount}件<br>
+                        「諸経費」として表示されているか確認してください。
+                    </div>
+                `;
+                
+            } catch (error) {
+                document.getElementById('csv-test-result').innerHTML = 
+                    `<div class="error-message">CSVエクスポートエラー: ${error.message}</div>`;
+            }
+        }
+        
+        // 初期化実行
+        document.addEventListener('DOMContentLoaded', async () => {
+            await init();
+            displayFixedCostsData(); // 既存データがあれば表示
+        });
+    </script>
+    
+    <style>
+        .test-section {
+            margin: 2rem 0;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .test-section h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .category-list ul {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem;
+            list-style-type: disc;
+            padding-left: 2rem;
+        }
+        
+        .category-list li {
+            padding: 0.25rem 0;
+        }
+        
+        .success-message, .error-message {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</body>
+</html>

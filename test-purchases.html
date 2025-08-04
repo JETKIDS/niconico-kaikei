@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仕入れ管理テスト</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>仕入れ管理フォーム テスト</h1>
+    <div id="test-results"></div>
+
+    <script src="kaikei/js/data-manager.js"></script>
+    <script>
+        // テスト実行
+        function runTests() {
+            const results = document.getElementById('test-results');
+            let testCount = 0;
+            let passCount = 0;
+
+            function addResult(testName, passed, message) {
+                testCount++;
+                if (passed) passCount++;
+                
+                const div = document.createElement('div');
+                div.className = `test-result ${passed ? 'success' : 'error'}`;
+                div.innerHTML = `<strong>${testName}</strong>: ${passed ? '✅ PASS' : '❌ FAIL'} - ${message}`;
+                results.appendChild(div);
+            }
+
+            // テスト1: DataManagerの初期化
+            try {
+                const dataManager = new DataManager();
+                const data = dataManager.getAllData();
+                const hasPurchases = data.hasOwnProperty('purchases') && Array.isArray(data.purchases);
+                addResult('DataManager初期化', hasPurchases, 'purchasesカテゴリーが正しく初期化されました');
+            } catch (error) {
+                addResult('DataManager初期化', false, `エラー: ${error.message}`);
+            }
+
+            // テスト2: 仕入れデータのバリデーション（正常ケース）
+            try {
+                const dataManager = new DataManager();
+                const validData = {
+                    year: 2024,
+                    month: 3,
+                    amount: 150000,
+                    note: '商品仕入れ'
+                };
+                const validation = dataManager.validateRecord('purchases', validData);
+                addResult('バリデーション（正常）', validation.isValid, '正常なデータが正しく検証されました');
+            } catch (error) {
+                addResult('バリデーション（正常）', false, `エラー: ${error.message}`);
+            }
+
+            // テスト3: 仕入れデータのバリデーション（異常ケース）
+            try {
+                const dataManager = new DataManager();
+                const invalidData = {
+                    year: 2024,
+                    // month: 月が不足
+                    amount: -1000, // 負の金額
+                    note: 'テスト'
+                };
+                const validation = dataManager.validateRecord('purchases', invalidData);
+                addResult('バリデーション（異常）', !validation.isValid, '異常なデータが正しく検出されました');
+            } catch (error) {
+                addResult('バリデーション（異常）', false, `エラー: ${error.message}`);
+            }
+
+            // テスト4: 仕入れレコードの追加
+            try {
+                const dataManager = new DataManager();
+                const testData = {
+                    year: 2024,
+                    month: 3,
+                    amount: 200000,
+                    note: 'テスト仕入れ'
+                };
+                const record = dataManager.addRecord('purchases', testData);
+                const hasId = record && record.id;
+                addResult('レコード追加', hasId, 'レコードが正しく追加されました');
+            } catch (error) {
+                addResult('レコード追加', false, `エラー: ${error.message}`);
+            }
+
+            // テスト5: フィールド定義の確認
+            try {
+                const fieldDefs = DataModels.getFieldDefinitions();
+                const purchaseFields = fieldDefs.purchases;
+                const hasRequiredFields = purchaseFields.required.includes('year') && 
+                                        purchaseFields.required.includes('month') && 
+                                        purchaseFields.required.includes('amount');
+                const hasOptionalNote = purchaseFields.optional.includes('note');
+                addResult('フィールド定義', hasRequiredFields && hasOptionalNote, 'フィールド定義が要件通りです');
+            } catch (error) {
+                addResult('フィールド定義', false, `エラー: ${error.message}`);
+            }
+
+            // 結果サマリー
+            const summary = document.createElement('div');
+            summary.className = `test-result ${passCount === testCount ? 'success' : 'error'}`;
+            summary.innerHTML = `<strong>テスト結果</strong>: ${passCount}/${testCount} テストが成功しました`;
+            results.appendChild(summary);
+        }
+
+        // ページ読み込み後にテスト実行
+        document.addEventListener('DOMContentLoaded', runTests);
+    </script>
+</body>
+</html>

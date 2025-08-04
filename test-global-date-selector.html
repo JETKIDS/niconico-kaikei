@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>グローバル月選択機能テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>グローバル月選択機能テスト</h1>
+        </header>
+        
+        <main>
+            <div id="content-area">
+                <h2>グローバル月選択機能の確認</h2>
+                
+                <div class="test-section">
+                    <h3>機能説明</h3>
+                    <p>この機能により、ヘッダーの年月選択で全てのタブの表示月を一括変更できます。</p>
+                    <ul>
+                        <li>ヘッダーに年月選択が追加されました</li>
+                        <li>各タブで個別の年月フィルターは削除されました</li>
+                        <li>新規データ追加時は選択中の年月がデフォルト値になります</li>
+                        <li>レポート画面も選択中の年月で表示されます</li>
+                    </ul>
+                </div>
+                
+                <div class="test-section">
+                    <h3>テストデータ作成</h3>
+                    <p>複数の月にテストデータを作成して、月選択機能をテストします。</p>
+                    <button class="btn btn-primary" onclick="createMultiMonthTestData()">複数月のテストデータを作成</button>
+                    <div id="test-data-status"></div>
+                </div>
+                
+                <div class="test-section">
+                    <h3>テスト手順</h3>
+                    <ol>
+                        <li>上記ボタンでテストデータを作成</li>
+                        <li>メインアプリを開く</li>
+                        <li>ヘッダーの年月選択で異なる月を選択</li>
+                        <li>各タブ（売上管理、仕入れ管理など）で表示データが変わることを確認</li>
+                        <li>新規追加ボタンを押して、選択中の年月がデフォルト値になることを確認</li>
+                        <li>収支レポートも選択中の年月で表示されることを確認</li>
+                    </ol>
+                    <button class="btn btn-secondary" onclick="openMainApp()">メインアプリを開く</button>
+                </div>
+                
+                <div class="test-section">
+                    <h3>作成されたテストデータ</h3>
+                    <div id="test-data-summary"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="kaikei/js/data-manager.js"></script>
+    <script>
+        let dataManager;
+        
+        // 初期化
+        async function init() {
+            dataManager = new DataManager();
+            await dataManager.loadData();
+        }
+        
+        // 複数月のテストデータ作成
+        async function createMultiMonthTestData() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const testMonths = [1, 2, 3, 4, 5, 6]; // 6ヶ月分のテストデータ
+                let totalRecords = 0;
+                
+                for (const month of testMonths) {
+                    // 売上データ
+                    dataManager.addRecord('sales', {
+                        year: currentYear,
+                        month: month,
+                        amount: 300000 + (month * 10000),
+                        note: `${month}月の売上データ`
+                    });
+                    
+                    // 仕入れデータ
+                    dataManager.addRecord('purchases', {
+                        year: currentYear,
+                        month: month,
+                        amount: 150000 + (month * 5000),
+                        manufacturer: `テストメーカー${month}`,
+                        note: `${month}月の仕入れデータ`
+                    });
+                    
+                    // 諸経費データ
+                    dataManager.addRecord('fixedCosts', {
+                        year: currentYear,
+                        month: month,
+                        category: '家賃',
+                        amount: 120000,
+                        note: `${month}月の家賃`
+                    });
+                    
+                    dataManager.addRecord('fixedCosts', {
+                        year: currentYear,
+                        month: month,
+                        category: '電気代',
+                        amount: 15000 + (month * 1000),
+                        note: `${month}月の電気代`
+                    });
+                    
+                    // 人件費データ
+                    dataManager.addRecord('laborCosts', {
+                        year: currentYear,
+                        month: month,
+                        amount: 200000,
+                        note: `${month}月の人件費`
+                    });
+                    
+                    totalRecords += 5; // 各月5件のレコード
+                }
+                
+                document.getElementById('test-data-status').innerHTML = 
+                    `<div class="success-message">
+                        ${testMonths.length}ヶ月分のテストデータを作成しました（合計${totalRecords}件）
+                    </div>`;
+                
+                // データサマリーを表示
+                showTestDataSummary(currentYear, testMonths);
+                
+            } catch (error) {
+                document.getElementById('test-data-status').innerHTML = 
+                    `<div class="error-message">テストデータ作成エラー: ${error.message}</div>`;
+            }
+        }
+        
+        // テストデータサマリー表示
+        function showTestDataSummary(year, months) {
+            let summaryHTML = `<h4>${year}年のテストデータ:</h4>`;
+            summaryHTML += '<table class="data-table"><thead><tr><th>月</th><th>売上</th><th>仕入れ</th><th>諸経費</th><th>人件費</th></tr></thead><tbody>';
+            
+            months.forEach(month => {
+                const salesData = dataManager.getDataByCategory('sales').filter(r => r.year === year && r.month === month);
+                const purchasesData = dataManager.getDataByCategory('purchases').filter(r => r.year === year && r.month === month);
+                const fixedCostsData = dataManager.getDataByCategory('fixedCosts').filter(r => r.year === year && r.month === month);
+                const laborCostsData = dataManager.getDataByCategory('laborCosts').filter(r => r.year === year && r.month === month);
+                
+                const salesAmount = salesData.reduce((sum, r) => sum + (r.amount || 0), 0);
+                const purchasesAmount = purchasesData.reduce((sum, r) => sum + (r.amount || 0), 0);
+                const fixedCostsAmount = fixedCostsData.reduce((sum, r) => sum + (r.amount || 0), 0);
+                const laborCostsAmount = laborCostsData.reduce((sum, r) => sum + (r.amount || 0), 0);
+                
+                summaryHTML += `
+                    <tr>
+                        <td>${month}月</td>
+                        <td>${salesAmount.toLocaleString()}円</td>
+                        <td>${purchasesAmount.toLocaleString()}円</td>
+                        <td>${fixedCostsAmount.toLocaleString()}円</td>
+                        <td>${laborCostsAmount.toLocaleString()}円</td>
+                    </tr>
+                `;
+            });
+            
+            summaryHTML += '</tbody></table>';
+            summaryHTML += '<p><strong>テスト方法:</strong> メインアプリでヘッダーの月選択を変更して、各タブで異なるデータが表示されることを確認してください。</p>';
+            
+            document.getElementById('test-data-summary').innerHTML = summaryHTML;
+        }
+        
+        // メインアプリを開く
+        function openMainApp() {
+            window.open('kaikei/index.html', '_blank');
+        }
+        
+        // 初期化実行
+        document.addEventListener('DOMContentLoaded', async () => {
+            await init();
+        });
+    </script>
+    
+    <style>
+        .test-section {
+            margin: 2rem 0;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .test-section h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .test-section ol, .test-section ul {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+        
+        .test-section li {
+            margin: 0.5rem 0;
+        }
+        
+        .success-message, .error-message {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</body>
+</html>
