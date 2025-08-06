@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StoreManager テスト</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>StoreManager テスト</h1>
+    
+    <div class="test-section">
+        <h2>基本機能テスト</h2>
+        <button onclick="runBasicTests()">基本テスト実行</button>
+        <div id="basic-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>店舗管理テスト</h2>
+        <button onclick="runStoreManagementTests()">店舗管理テスト実行</button>
+        <div id="store-management-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>データ移行テスト</h2>
+        <button onclick="runMigrationTests()">移行テスト実行</button>
+        <div id="migration-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>現在の状態</h2>
+        <button onclick="showCurrentState()">現在の状態を表示</button>
+        <div id="current-state"></div>
+    </div>
+
+    <!-- Include application scripts -->
+    <script src="kaikei/js/data-manager.js"></script>
+    <script src="kaikei/js/store-manager.js"></script>
+    
+    <script>
+        let storeManager;
+        let dataManager;
+        
+        // 初期化
+        async function initialize() {
+            try {
+                storeManager = new StoreManager();
+                await storeManager.loadStoreData();
+                
+                dataManager = new DataManager();
+                await dataManager.loadData();
+                
+                // グローバル変数として設定
+                window.storeManager = storeManager;
+                window.dataManager = dataManager;
+                
+                console.log('初期化完了');
+            } catch (error) {
+                console.error('初期化エラー:', error);
+            }
+        }
+        
+        function showResult(containerId, message, isSuccess = true) {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `test-result ${isSuccess ? 'success' : 'error'}`;
+            div.textContent = message;
+            container.appendChild(div);
+        }
+        
+        function clearResults(containerId) {
+            document.getElementById(containerId).innerHTML = '';
+        }
+        
+        async function runBasicTests() {
+            clearResults('basic-results');
+            
+            try {
+                // StoreManagerの初期化テスト
+                if (storeManager) {
+                    showResult('basic-results', '✓ StoreManager初期化成功');
+                } else {
+                    showResult('basic-results', '✗ StoreManager初期化失敗', false);
+                    return;
+                }
+                
+                // 店舗数確認
+                const storeCount = storeManager.getStoreCount();
+                showResult('basic-results', `✓ 店舗数: ${storeCount}件`);
+                
+                // アクティブ店舗確認
+                const activeStore = storeManager.getActiveStore();
+                if (activeStore) {
+                    showResult('basic-results', `✓ アクティブ店舗: ${activeStore.name}`);
+                } else {
+                    showResult('basic-results', '✗ アクティブ店舗が設定されていません', false);
+                }
+                
+                // 全店舗取得テスト
+                const stores = storeManager.getStores();
+                showResult('basic-results', `✓ 全店舗取得成功: ${stores.length}件`);
+                
+            } catch (error) {
+                showResult('basic-results', `✗ エラー: ${error.message}`, false);
+            }
+        }
+        
+        async function runStoreManagementTests() {
+            clearResults('store-management-results');
+            
+            try {
+                // 新規店舗追加テスト
+                const newStore = storeManager.addStore({
+                    name: 'テスト店舗',
+                    address: 'テスト住所',
+                    openDate: '2024-01-01',
+                    note: 'テスト用店舗'
+                });
+                showResult('store-management-results', `✓ 店舗追加成功: ${newStore.name}`);
+                
+                // 店舗更新テスト
+                const updatedStore = storeManager.updateStore(newStore.id, {
+                    name: 'テスト店舗（更新済み）',
+                    note: '更新されたテスト用店舗'
+                });
+                showResult('store-management-results', `✓ 店舗更新成功: ${updatedStore.name}`);
+                
+                // 店舗検索テスト
+                const searchResults = storeManager.searchStores('テスト');
+                showResult('store-management-results', `✓ 店舗検索成功: ${searchResults.length}件`);
+                
+                // アクティブ店舗変更テスト
+                storeManager.setActiveStore(newStore.id);
+                const currentActive = storeManager.getActiveStore();
+                showResult('store-management-results', `✓ アクティブ店舗変更成功: ${currentActive.name}`);
+                
+                // 店舗削除テスト（最後に実行）
+                if (storeManager.getStoreCount() > 1) {
+                    storeManager.deleteStore(newStore.id);
+                    showResult('store-management-results', '✓ 店舗削除成功');
+                } else {
+                    showResult('store-management-results', '✓ 店舗削除スキップ（最後の店舗のため）');
+                }
+                
+            } catch (error) {
+                showResult('store-management-results', `✗ エラー: ${error.message}`, false);
+            }
+        }
+        
+        async function runMigrationTests() {
+            clearResults('migration-results');
+            
+            try {
+                // データ移行テスト
+                const migrated = dataManager.migrateDataForStoreSupport();
+                if (migrated) {
+                    showResult('migration-results', '✓ データ移行実行済み');
+                } else {
+                    showResult('migration-results', '✓ データ移行不要（既に移行済み）');
+                }
+                
+                // 店舗別データ取得テスト
+                const activeStoreId = storeManager.getActiveStoreId();
+                const storeData = dataManager.getDataByStore(activeStoreId);
+                let totalRecords = 0;
+                for (const category in storeData) {
+                    totalRecords += storeData[category].length;
+                }
+                showResult('migration-results', `✓ 店舗別データ取得成功: ${totalRecords}件`);
+                
+                // 店舗フィルタリングテスト
+                const salesData = dataManager.getDataByCategory('sales');
+                showResult('migration-results', `✓ 売上データフィルタリング成功: ${salesData.length}件`);
+                
+            } catch (error) {
+                showResult('migration-results', `✗ エラー: ${error.message}`, false);
+            }
+        }
+        
+        function showCurrentState() {
+            const container = document.getElementById('current-state');
+            container.innerHTML = '';
+            
+            try {
+                const stats = storeManager.getStoreStatistics();
+                const pre = document.createElement('pre');
+                pre.textContent = JSON.stringify(stats, null, 2);
+                container.appendChild(pre);
+                
+                const stores = storeManager.getStores();
+                const storesPre = document.createElement('pre');
+                storesPre.textContent = '店舗一覧:\n' + JSON.stringify(stores, null, 2);
+                container.appendChild(storesPre);
+                
+            } catch (error) {
+                showResult('current-state', `エラー: ${error.message}`, false);
+            }
+        }
+        
+        // ページ読み込み時に初期化
+        window.addEventListener('DOMContentLoaded', initialize);
+    </script>
+</body>
+</html>

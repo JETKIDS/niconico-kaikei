@@ -5,6 +5,7 @@
 class App {
     constructor() {
         this.dataManager = null;
+        this.storeManager = null;
         this.uiManager = null;
         this.chartManager = null;
         this.globalYear = new Date().getFullYear();
@@ -13,29 +14,92 @@ class App {
     }
 
     /**
-     * アプリケーション初期化
+     * アプリケーション初期化（パフォーマンス監視対応版）
      */
     async init() {
+        const initStartTime = performance.now();
+        
         try {
             console.log('アプリケーションを初期化しています...');
             
+            // 必要なクラスの存在確認
+            console.log('必要なクラスの存在確認中...');
+            const requiredClasses = {
+                'DataManager': typeof DataManager !== 'undefined' ? DataManager : undefined,
+                'StoreManager': typeof StoreManager !== 'undefined' ? StoreManager : undefined,
+                'UIManager': typeof UIManager !== 'undefined' ? UIManager : undefined,
+                'ChartManager': typeof ChartManager !== 'undefined' ? ChartManager : undefined
+            };
+            
+            const missingClasses = [];
+            for (const [className, classRef] of Object.entries(requiredClasses)) {
+                if (typeof classRef === 'undefined') {
+                    console.error(`❌ ${className}クラスが定義されていません`);
+                    missingClasses.push(className);
+                } else {
+                    console.log(`✓ ${className}クラスは正常に定義されています`);
+                }
+            }
+            
+            if (missingClasses.length > 0) {
+                throw new Error(`必要なクラスが見つかりません: ${missingClasses.join(', ')}`);
+            }
+            
             // 保存状態管理の初期化（早期初期化）
-            const saveStatusManager = new SaveStatusManager();
-            saveStatusManager.showLoading('データ読み込み中...');
+            let saveStatusManager = null;
+            try {
+                if (typeof SaveStatusManager !== 'undefined') {
+                    saveStatusManager = new SaveStatusManager();
+                    saveStatusManager.showLoading('アプリケーションを初期化中...');
+                }
+            } catch (error) {
+                console.warn('SaveStatusManagerの初期化に失敗しました:', error);
+            }
+            
+            // 店舗マネージャー初期化
+            console.log('店舗マネージャーを初期化中...');
+            if (saveStatusManager) {
+                saveStatusManager.showLoading('店舗データを読み込み中...');
+            }
+            
+            this.storeManager = new StoreManager();
+            await this.storeManager.loadStoreData();
+            console.log('店舗マネージャー初期化完了');
             
             // データマネージャー初期化
+            console.log('データマネージャーを初期化中...');
+            if (saveStatusManager) {
+                saveStatusManager.showLoading('収支データを読み込み中...');
+            }
             this.dataManager = new DataManager();
+            console.log('データマネージャー初期化完了');
             
             // グローバル変数として設定（保存状態管理で使用するため）
             window.dataManager = this.dataManager;
+            window.storeManager = this.storeManager;
             
             // データ読み込み
+            console.log('データを読み込み中...');
             const dataLoaded = await this.dataManager.loadData();
+            console.log('データ読み込み完了');
+            
+            // 既存データの店舗対応移行
+            console.log('データ移行を実行中...');
+            if (saveStatusManager) {
+                saveStatusManager.showLoading('データを最新形式に移行中...');
+            }
+            this.dataManager.migrateDataForStoreSupport();
+            console.log('データ移行完了');
             
             // UIマネージャー初期化
+            console.log('UIマネージャーを初期化中...');
+            if (saveStatusManager) {
+                saveStatusManager.showLoading('ユーザーインターフェースを準備中...');
+            }
             this.uiManager = new UIManager(this.dataManager);
             
             // チャートマネージャー初期化
+            console.log('チャートマネージャーを初期化中...');
             this.chartManager = new ChartManager(this.dataManager);
             
             // グローバル変数として設定（他のスクリプトからアクセス可能にする）
@@ -43,7 +107,17 @@ class App {
             window.chartManager = this.chartManager;
             window.app = this;
             
+            // パフォーマンス監視開始（開発環境のみ）
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                this.uiManager.performanceMonitor.startMonitoring();
+                console.log('パフォーマンス監視を開始しました');
+            }
+            
             // UI初期化
+            console.log('UIを初期化中...');
+            if (saveStatusManager) {
+                saveStatusManager.showLoading('画面を準備中...');
+            }
             this.uiManager.init();
             
             // CSVエクスポートドロップダウンの外部クリック処理
@@ -52,17 +126,44 @@ class App {
             // グローバル日付選択の初期化
             this.initGlobalDateSelector();
             
+            // グローバル店舗選択の初期化
+            this.initGlobalStoreSelector();
+
+            // 初期化時間を計算
+            const initEndTime = performance.now();
+            const initTime = initEndTime - initStartTime;
+            console.log(`アプリケーション初期化時間: ${initTime.toFixed(2)}ms`);
+
             // 初期化完了後の状態設定
-            if (dataLoaded) {
-                saveStatusManager.showStatus('ready', 'データ読み込み完了');
-            } else {
-                saveStatusManager.showStatus('ready', '新規データで開始');
+            if (saveStatusManager) {
+                if (dataLoaded) {
+                    saveStatusManager.showStatus('ready', `データ読み込み完了 (${initTime.toFixed(0)}ms)`);
+                } else {
+                    saveStatusManager.showStatus('ready', `新規データで開始 (${initTime.toFixed(0)}ms)`);
+                }
+            }
+            
+            // 初期化完了通知
+            if (this.uiManager && this.uiManager.toastManager) {
+                this.uiManager.toastManager.show(
+                    'アプリケーションの準備が完了しました',
+                    'success',
+                    3000,
+                    '初期化完了'
+                );
             }
             
             console.log('アプリケーションの初期化が完了しました');
             
+            // メモリ使用量をログ出力
+            if (performance.memory) {
+                const memoryMB = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+                console.log(`初期化後のメモリ使用量: ${memoryMB}MB`);
+            }
+            
         } catch (error) {
             console.error('アプリケーション初期化エラー:', error);
+            console.error('エラースタック:', error.stack);
             
             // エラー状態を表示
             if (window.SaveStatusManager) {
@@ -70,7 +171,21 @@ class App {
                 saveStatusManager.showStatus('error', '初期化エラー');
             }
             
-            this.showErrorMessage('アプリケーションの初期化に失敗しました。ページを再読み込みしてください。');
+            // 詳細なエラー情報を表示
+            if (this.uiManager && this.uiManager.showEnhancedErrorMessage) {
+                this.uiManager.showEnhancedErrorMessage(
+                    'アプリケーション初期化エラー',
+                    `アプリケーションの初期化に失敗しました: ${error.message}`,
+                    {
+                        showDetails: true,
+                        details: error.stack,
+                        showRetry: true,
+                        retryAction: () => location.reload()
+                    }
+                );
+            } else {
+                this.showErrorMessage(`アプリケーションの初期化に失敗しました: ${error.message}\nページを再読み込みしてください。`);
+            }
         }
     }
 
@@ -253,11 +368,155 @@ class App {
     }
 
     /**
+     * グローバル店舗選択の初期化
+     */
+    initGlobalStoreSelector() {
+        const storeSelectorDiv = document.getElementById('global-store-selector');
+        if (!storeSelectorDiv) return;
+
+        let selectHTML = '<label for="global-store">店舗:</label><select id="global-store" onchange="app.changeGlobalStore()">';
+        const stores = this.storeManager.getStores();
+        const activeStoreId = this.storeManager.getActiveStoreId();
+
+        if (stores.length === 0) {
+            selectHTML += '<option value="">店舗がありません</option>';
+        } else {
+            stores.forEach(store => {
+                const selected = store.id === activeStoreId ? 'selected' : '';
+                selectHTML += `<option value="${store.id}" ${selected}>${store.name}</option>`;
+            });
+        }
+        selectHTML += '</select>';
+        storeSelectorDiv.innerHTML = selectHTML;
+    }
+
+    /**
+     * グローバル店舗変更処理（ローディング対応版）
+     */
+    changeGlobalStore() {
+        const storeSelect = document.getElementById('global-store');
+        const newStoreId = storeSelect.value;
+        
+        if (!newStoreId) return;
+        
+        // 現在の店舗と同じ場合は何もしない
+        const currentStoreId = this.storeManager.getActiveStoreId();
+        if (newStoreId === currentStoreId) return;
+        
+        // ローディング表示
+        const loaderId = window.loadingManager ? 
+            window.loadingManager.show('店舗を切り替え中...', '新しい店舗のデータを読み込んでいます') : null;
+        
+        // コンテンツエリアにローディング状態を適用
+        const contentArea = document.getElementById('content-area');
+        if (contentArea && window.loadingManager) {
+            window.loadingManager.showStoreSwitching(contentArea);
+        }
+        
+        try {
+            // 店舗切り替え実行
+            this.storeManager.setActiveStore(newStoreId);
+            
+            // 非同期で画面更新
+            setTimeout(() => {
+                try {
+                    // 現在のセクションを再表示
+                    this.refreshCurrentSection();
+                    
+                    // 店舗情報取得
+                    const newStore = this.storeManager.getStoreById(newStoreId);
+                    const storeName = newStore ? newStore.name : '不明な店舗';
+                    
+                    // ローディング終了
+                    if (loaderId && window.loadingManager) {
+                        window.loadingManager.hide(loaderId);
+                    }
+                    if (contentArea && window.loadingManager) {
+                        window.loadingManager.hideStoreSwitching(contentArea);
+                    }
+                    
+                    // 成功通知
+                    if (window.toastManager) {
+                        window.toastManager.show(
+                            `店舗を「${storeName}」に切り替えました`,
+                            'success',
+                            3000
+                        );
+                    } else if (this.uiManager) {
+                        this.uiManager.showMessage(`店舗を「${storeName}」に切り替えました`, 'success');
+                    }
+                    
+                    // パフォーマンス監視
+                    if (window.performanceMonitor) {
+                        window.performanceMonitor.measureRenderTime('store-switch', () => {
+                            console.log(`店舗切り替え完了: ${storeName}`);
+                        });
+                    }
+                    
+                } catch (error) {
+                    console.error('店舗切り替えエラー:', error);
+                    
+                    // ローディング終了
+                    if (loaderId && window.loadingManager) {
+                        window.loadingManager.hide(loaderId);
+                    }
+                    if (contentArea && window.loadingManager) {
+                        window.loadingManager.hideStoreSwitching(contentArea);
+                    }
+                    
+                    // エラー通知
+                    if (window.toastManager) {
+                        window.toastManager.show(
+                            `店舗切り替えに失敗しました: ${error.message}`,
+                            'error',
+                            5000
+                        );
+                    }
+                    
+                    // 元の店舗に戻す
+                    if (currentStoreId) {
+                        storeSelect.value = currentStoreId;
+                    }
+                }
+            }, 100); // UIの応答性を保つための短い遅延
+            
+        } catch (error) {
+            console.error('店舗切り替え初期化エラー:', error);
+            
+            // ローディング終了
+            if (loaderId && window.loadingManager) {
+                window.loadingManager.hide(loaderId);
+            }
+            if (contentArea && window.loadingManager) {
+                window.loadingManager.hideStoreSwitching(contentArea);
+            }
+            
+            // エラー通知
+            if (window.toastManager) {
+                window.toastManager.show(
+                    `店舗切り替えに失敗しました: ${error.message}`,
+                    'error',
+                    5000
+                );
+            }
+            
+            // 元の店舗に戻す
+            if (currentStoreId) {
+                storeSelect.value = currentStoreId;
+            }
+        }
+    }
+
+    /**
      * 現在のセクションを再表示
      */
     refreshCurrentSection() {
         if (this.uiManager) {
             this.uiManager.showSection(this.currentSection, this.globalYear, this.globalMonth);
+            // 店舗管理画面の場合は、店舗リストも更新
+            if (this.currentSection === 'stores') {
+                this.uiManager.showStoreManagement();
+            }
         }
     }
 

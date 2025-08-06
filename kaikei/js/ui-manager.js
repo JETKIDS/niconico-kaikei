@@ -184,6 +184,290 @@ class SaveStatusManager {
 }
 
 /**
+ * ローディング管理クラス
+ * ローディング状態の表示と管理を担当
+ */
+class LoadingManager {
+    constructor() {
+        this.activeLoaders = new Set();
+        this.loadingOverlay = null;
+    }
+
+    /**
+     * ローディング表示
+     */
+    show(message = 'データを読み込み中...', subtext = '') {
+        const loaderId = Date.now().toString();
+        this.activeLoaders.add(loaderId);
+
+        if (!this.loadingOverlay) {
+            this.loadingOverlay = document.createElement('div');
+            this.loadingOverlay.className = 'loading-overlay';
+            this.loadingOverlay.innerHTML = `
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text" id="loading-text">${message}</div>
+                    <div class="loading-subtext" id="loading-subtext">${subtext}</div>
+                </div>
+            `;
+            document.body.appendChild(this.loadingOverlay);
+        } else {
+            document.getElementById('loading-text').textContent = message;
+            document.getElementById('loading-subtext').textContent = subtext;
+        }
+
+        return loaderId;
+    }
+
+    /**
+     * ローディング非表示
+     */
+    hide(loaderId) {
+        if (loaderId) {
+            this.activeLoaders.delete(loaderId);
+        }
+
+        if (this.activeLoaders.size === 0 && this.loadingOverlay) {
+            this.loadingOverlay.remove();
+            this.loadingOverlay = null;
+        }
+    }
+
+    /**
+     * 全てのローディングを非表示
+     */
+    hideAll() {
+        this.activeLoaders.clear();
+        if (this.loadingOverlay) {
+            this.loadingOverlay.remove();
+            this.loadingOverlay = null;
+        }
+    }
+
+    /**
+     * 店舗切り替え時のローディング
+     */
+    showStoreSwitching(element) {
+        if (element) {
+            element.classList.add('store-switching-loader');
+        }
+    }
+
+    /**
+     * 店舗切り替えローディング終了
+     */
+    hideStoreSwitching(element) {
+        if (element) {
+            element.classList.remove('store-switching-loader');
+        }
+    }
+}
+
+/**
+ * トースト通知管理クラス
+ */
+class ToastManager {
+    constructor() {
+        this.container = null;
+        this.toasts = new Map();
+        this.init();
+    }
+
+    init() {
+        this.container = document.createElement('div');
+        this.container.className = 'toast-container';
+        document.body.appendChild(this.container);
+    }
+
+    /**
+     * トースト表示
+     */
+    show(message, type = 'info', duration = 5000, title = '') {
+        const toastId = Date.now().toString();
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+            <div class="toast-header">
+                <div class="toast-title">${title || this.getDefaultTitle(type)}</div>
+                <button class="toast-close" onclick="toastManager.hide('${toastId}')">&times;</button>
+            </div>
+            <div class="toast-body">${message}</div>
+        `;
+
+        this.container.appendChild(toast);
+        this.toasts.set(toastId, toast);
+
+        // アニメーション表示
+        setTimeout(() => toast.classList.add('show'), 100);
+
+        // 自動削除
+        if (duration > 0) {
+            setTimeout(() => this.hide(toastId), duration);
+        }
+
+        return toastId;
+    }
+
+    /**
+     * トースト非表示
+     */
+    hide(toastId) {
+        const toast = this.toasts.get(toastId);
+        if (toast) {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+                this.toasts.delete(toastId);
+            }, 300);
+        }
+    }
+
+    /**
+     * デフォルトタイトル取得
+     */
+    getDefaultTitle(type) {
+        const titles = {
+            success: '成功',
+            error: 'エラー',
+            warning: '警告',
+            info: '情報'
+        };
+        return titles[type] || '通知';
+    }
+}
+
+/**
+ * パフォーマンス監視クラス
+ */
+class PerformanceMonitor {
+    constructor() {
+        this.metrics = {
+            renderTime: [],
+            dataLoadTime: [],
+            memoryUsage: []
+        };
+        this.isMonitoring = false;
+        this.indicator = null;
+    }
+
+    /**
+     * 監視開始
+     */
+    startMonitoring() {
+        this.isMonitoring = true;
+        this.createIndicator();
+        this.startMemoryMonitoring();
+    }
+
+    /**
+     * 監視停止
+     */
+    stopMonitoring() {
+        this.isMonitoring = false;
+        if (this.indicator) {
+            this.indicator.remove();
+            this.indicator = null;
+        }
+    }
+
+    /**
+     * レンダリング時間測定
+     */
+    measureRenderTime(operation, callback) {
+        const startTime = performance.now();
+        const result = callback();
+        const endTime = performance.now();
+        const renderTime = endTime - startTime;
+        
+        this.metrics.renderTime.push(renderTime);
+        this.updateIndicator('render', renderTime);
+        
+        if (renderTime > 100) {
+            console.warn(`遅いレンダリング検出: ${operation} - ${renderTime.toFixed(2)}ms`);
+        }
+        
+        return result;
+    }
+
+    /**
+     * データ読み込み時間測定
+     */
+    measureDataLoadTime(operation, callback) {
+        const startTime = performance.now();
+        const result = callback();
+        const endTime = performance.now();
+        const loadTime = endTime - startTime;
+        
+        this.metrics.dataLoadTime.push(loadTime);
+        this.updateIndicator('load', loadTime);
+        
+        return result;
+    }
+
+    /**
+     * メモリ監視
+     */
+    startMemoryMonitoring() {
+        if (!this.isMonitoring) return;
+        
+        if (performance.memory) {
+            const memoryInfo = performance.memory;
+            const usedMB = Math.round(memoryInfo.usedJSHeapSize / 1024 / 1024);
+            this.metrics.memoryUsage.push(usedMB);
+            
+            if (usedMB > 100) {
+                this.showMemoryWarning(usedMB);
+            }
+        }
+        
+        setTimeout(() => this.startMemoryMonitoring(), 5000);
+    }
+
+    /**
+     * インジケーター作成
+     */
+    createIndicator() {
+        this.indicator = document.createElement('div');
+        this.indicator.className = 'performance-indicator';
+        document.body.appendChild(this.indicator);
+    }
+
+    /**
+     * インジケーター更新
+     */
+    updateIndicator(type, value) {
+        if (!this.indicator) return;
+        
+        const displayValue = value.toFixed(1);
+        const unit = type === 'render' || type === 'load' ? 'ms' : 'MB';
+        this.indicator.textContent = `${type}: ${displayValue}${unit}`;
+        this.indicator.classList.add('show');
+        
+        setTimeout(() => {
+            if (this.indicator) {
+                this.indicator.classList.remove('show');
+            }
+        }, 2000);
+    }
+
+    /**
+     * メモリ警告表示
+     */
+    showMemoryWarning(usedMB) {
+        if (window.toastManager) {
+            window.toastManager.show(
+                `メモリ使用量が多くなっています (${usedMB}MB)。ページの再読み込みを検討してください。`,
+                'warning',
+                10000,
+                'パフォーマンス警告'
+            );
+        }
+    }
+}
+
+/**
  * UI管理クラス
  * ユーザーインターフェースの制御と表示を担当
  */
@@ -193,6 +477,15 @@ class UIManager {
         this.contentArea = document.getElementById('content-area');
         this.currentSection = 'sales';
         this.saveStatusManager = new SaveStatusManager();
+        this.loadingManager = new LoadingManager();
+        this.toastManager = new ToastManager();
+        this.performanceMonitor = new PerformanceMonitor();
+        this.setupErrorHandling();
+        
+        // グローバル変数として設定
+        window.loadingManager = this.loadingManager;
+        window.toastManager = this.toastManager;
+        window.performanceMonitor = this.performanceMonitor;
     }
 
     /**
@@ -202,6 +495,364 @@ class UIManager {
         this.setupNavigation();
         this.saveStatusManager.init();
         this.showSection('sales');
+    }
+
+    /**
+     * エラーハンドリングの設定
+     */
+    setupErrorHandling() {
+        // 店舗未選択エラーの処理
+        document.addEventListener('storeNotSelectedError', (event) => {
+            const { category, storeCount, message } = event.detail;
+            this.showStoreNotSelectedDialog(category, storeCount, message);
+        });
+
+        // 店舗自動復旧の通知
+        document.addEventListener('storeAutoRecovered', (event) => {
+            const { recoveredStore, reason } = event.detail;
+            this.showMessage(`${reason}\n現在の店舗: ${recoveredStore.name}`, 'warning');
+        });
+
+        // データ移動時の重複確認
+        document.addEventListener('dataMoveConfirmRequired', (event) => {
+            const { recordId, category, targetStoreId, duplicates, warnings, record } = event.detail;
+            this.showDataMoveDuplicateConfirmDialog(recordId, category, targetStoreId, duplicates, warnings, record);
+        });
+    }
+
+    /**
+     * 強化されたエラーメッセージ表示
+     */
+    showEnhancedErrorMessage(title, message, options = {}) {
+        const {
+            type = 'error',
+            showRetry = false,
+            retryAction = null,
+            showDetails = false,
+            details = '',
+            autoClose = false,
+            duration = 0
+        } = options;
+
+        const modalId = `error-modal-${Date.now()}`;
+        const dialogHTML = `
+            <div class="modal-overlay" id="${modalId}">
+                <div class="modal-content error-dialog">
+                    <div class="modal-header">
+                        <h3>${this.getErrorIcon(type)} ${title}</h3>
+                        <button class="close-btn" onclick="uiManager.hideErrorDialog('${modalId}')">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="error-message">${message}</p>
+                        ${showDetails && details ? `
+                        <div class="error-details">
+                            <h4>詳細情報:</h4>
+                            <pre>${details}</pre>
+                        </div>
+                        ` : ''}
+                        <div class="user-guidance">
+                            <h4>推奨される対処法:</h4>
+                            <ul>
+                                <li>ページを再読み込みしてみてください</li>
+                                <li>ブラウザのキャッシュをクリアしてください</li>
+                                <li>問題が続く場合は、データのバックアップを取ってください</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        ${showRetry ? `
+                        <button class="btn btn-primary" onclick="uiManager.retryAction('${modalId}', ${retryAction ? 'true' : 'false'})">
+                            再試行
+                        </button>
+                        ` : ''}
+                        <button class="btn btn-secondary" onclick="uiManager.hideErrorDialog('${modalId}')">
+                            閉じる
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+
+        // 再試行アクションを保存
+        if (retryAction) {
+            this.retryActions = this.retryActions || new Map();
+            this.retryActions.set(modalId, retryAction);
+        }
+
+        // 自動クローズ
+        if (autoClose && duration > 0) {
+            setTimeout(() => this.hideErrorDialog(modalId), duration);
+        }
+
+        return modalId;
+    }
+
+    /**
+     * エラーアイコン取得
+     */
+    getErrorIcon(type) {
+        const icons = {
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️',
+            success: '✅'
+        };
+        return icons[type] || '❌';
+    }
+
+    /**
+     * エラーダイアログを閉じる
+     */
+    hideErrorDialog(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.remove();
+        }
+        
+        // 再試行アクションをクリーンアップ
+        if (this.retryActions) {
+            this.retryActions.delete(modalId);
+        }
+    }
+
+    /**
+     * 再試行アクション実行
+     */
+    retryAction(modalId, hasAction) {
+        if (hasAction && this.retryActions && this.retryActions.has(modalId)) {
+            const action = this.retryActions.get(modalId);
+            this.hideErrorDialog(modalId);
+            
+            try {
+                action();
+            } catch (error) {
+                console.error('再試行アクション実行エラー:', error);
+                this.showEnhancedErrorMessage(
+                    '再試行エラー',
+                    `再試行に失敗しました: ${error.message}`
+                );
+            }
+        } else {
+            this.hideErrorDialog(modalId);
+            location.reload();
+        }
+    }
+
+    /**
+     * 店舗未選択ダイアログ表示（強化版）
+     */
+    showStoreNotSelectedDialog(category, storeCount, message) {
+        const categoryNames = {
+            'sales': '売上',
+            'purchases': '仕入れ',
+            'fixedCosts': '固定費',
+            'variableCosts': '変動費',
+            'laborCosts': '人件費',
+            'consumptionTax': '消費税',
+            'monthlyPayments': '月々の返済',
+            'manufacturerDeposits': 'メーカー保証金'
+        };
+
+        const categoryName = categoryNames[category] || category;
+
+        const dialogHTML = `
+            <div class="modal-overlay" id="store-not-selected-modal">
+                <div class="modal-content error-dialog">
+                    <div class="modal-header">
+                        <h3>⚠️ 店舗が選択されていません</h3>
+                        <button class="close-btn" onclick="uiManager.hideStoreNotSelectedDialog()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="error-message">${categoryName}データを入力するには、まず店舗を選択する必要があります。</p>
+                        <div class="error-details">
+                            <p><strong>登録済み店舗数:</strong> ${storeCount}店舗</p>
+                            <p><strong>操作方法:</strong></p>
+                            <ol>
+                                <li>画面上部のヘッダーにある店舗選択ドロップダウンをクリック</li>
+                                <li>データを入力したい店舗を選択</li>
+                                <li>再度データ入力を行ってください</li>
+                            </ol>
+                        </div>
+                        ${storeCount === 0 ? `
+                        <div class="no-store-warning">
+                            <p><strong>店舗が登録されていません。</strong></p>
+                            <p>まず店舗管理画面で店舗を登録してください。</p>
+                        </div>
+                        ` : ''}
+                        <div class="user-guidance">
+                            <h4>💡 ヒント:</h4>
+                            <p>店舗を選択すると、その店舗専用のデータ入力・管理ができるようになります。</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        ${storeCount > 0 ? `
+                        <button class="btn btn-primary" onclick="uiManager.focusStoreSelector()">
+                            <span class="tooltip">店舗選択画面へ
+                                <span class="tooltip-text">ヘッダーの店舗選択ドロップダウンにフォーカスします</span>
+                            </span>
+                        </button>
+                        ` : `
+                        <button class="btn btn-primary" onclick="uiManager.showSection('stores')">
+                            店舗管理画面へ
+                        </button>
+                        `}
+                        <button class="btn btn-secondary" onclick="uiManager.hideStoreNotSelectedDialog()">
+                            閉じる
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+        
+        // アクセシビリティ向上
+        const modal = document.getElementById('store-not-selected-modal');
+        if (modal) {
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-labelledby', 'store-not-selected-title');
+            modal.setAttribute('aria-modal', 'true');
+            
+            // フォーカストラップ
+            const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (focusableElements.length > 0) {
+                focusableElements[0].focus();
+            }
+        }
+    }
+
+    /**
+     * 店舗未選択ダイアログを閉じる
+     */
+    hideStoreNotSelectedDialog() {
+        const modal = document.getElementById('store-not-selected-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    /**
+     * 店舗選択にフォーカス
+     */
+    focusStoreSelector() {
+        this.hideStoreNotSelectedDialog();
+        const storeSelector = document.getElementById('global-store');
+        if (storeSelector) {
+            storeSelector.focus();
+            storeSelector.click();
+            
+            // ハイライト効果
+            storeSelector.style.boxShadow = '0 0 10px #a03030';
+            setTimeout(() => {
+                storeSelector.style.boxShadow = '';
+            }, 2000);
+        }
+    }
+
+    /**
+     * 全選択/選択解除
+     */
+    selectAllRecords(category) {
+        const checkboxes = document.querySelectorAll(`#data-table-${category} .record-checkbox`);
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = true;
+        }
+        
+        this.updateSelectionCount(category);
+    }
+
+    /**
+     * 選択解除
+     */
+    clearSelection(category) {
+        const checkboxes = document.querySelectorAll(`#data-table-${category} .record-checkbox`);
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = false;
+        }
+        
+        this.updateSelectionCount(category);
+    }
+
+    /**
+     * 全選択チェックボックス切り替え
+     */
+    toggleSelectAll(selectAllCheckbox, category) {
+        const checkboxes = document.querySelectorAll(`#data-table-${category} .record-checkbox`);
+        
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+        
+        this.updateSelectionCount(category);
+    }
+
+    /**
+     * 選択数更新
+     */
+    updateSelectionCount(category) {
+        const checkboxes = document.querySelectorAll(`#data-table-${category} .record-checkbox:checked`);
+        const count = checkboxes.length;
+        
+        const selectionCount = document.getElementById('selection-count');
+        const moveButton = document.getElementById('move-selected-btn');
+        
+        if (selectionCount) {
+            selectionCount.textContent = `${count}件選択中`;
+        }
+        
+        if (moveButton) {
+            moveButton.disabled = count === 0;
+            moveButton.textContent = count > 0 ? `選択したデータを移動 (${count}件)` : '選択したデータを移動';
+        }
+        
+        // 全選択チェックボックスの状態更新
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        const allCheckboxes = document.querySelectorAll(`#data-table-${category} .record-checkbox`);
+        
+        if (selectAllCheckbox && allCheckboxes.length > 0) {
+            const checkedCount = document.querySelectorAll(`#data-table-${category} .record-checkbox:checked`).length;
+            selectAllCheckbox.checked = checkedCount === allCheckboxes.length;
+            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < allCheckboxes.length;
+        }
+    }
+
+    /**
+     * メッセージ表示（トースト対応版）
+     */
+    showMessage(message, type = 'info', duration = 3000) {
+        if (this.toastManager) {
+            this.toastManager.show(message, type, duration);
+        } else {
+            // フォールバック: 従来のメッセージ表示
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.textContent = message;
+            
+            const contentArea = document.getElementById('content-area');
+            if (contentArea) {
+                contentArea.insertBefore(messageDiv, contentArea.firstChild);
+                
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, duration);
+            }
+        }
     }
 
     /**
@@ -223,51 +874,112 @@ class UIManager {
     }
 
     /**
-     * セクション表示
+     * セクション表示（パフォーマンス最適化版）
      */
     showSection(section, globalYear = null, globalMonth = null) {
-        this.currentSection = section;
-        
-        // 現在のセクションを記録
-        if (window.app) {
-            window.app.setCurrentSection(section);
-        }
-        
-        switch(section) {
-            case 'sales':
-                this.showDataManagement('売上管理', 'sales');
-                break;
-            case 'purchases':
-                this.showDataManagement('仕入れ管理', 'purchases');
-                break;
-            case 'fixed-costs':
-                this.showDataManagement('固定費管理', 'fixedCosts');
-                break;
-            case 'variable-costs':
-                this.showVariableCostsManagement();
-                break;
-            case 'labor-costs':
-                this.showDataManagement('人件費管理', 'laborCosts');
-                break;
+        // パフォーマンス測定開始
+        return this.performanceMonitor.measureRenderTime(`showSection-${section}`, () => {
+            this.currentSection = section;
+            
+            // 現在のセクションを記録
+            if (window.app) {
+                window.app.setCurrentSection(section);
+            }
+            
+            // ローディング表示
+            const loaderId = this.loadingManager.show(`${this.getSectionTitle(section)}を読み込み中...`);
+            
+            try {
+                // 非同期でセクション表示を実行
+                setTimeout(() => {
+                    try {
+                        switch(section) {
+                            case 'sales':
+                                this.showDataManagement('売上管理', 'sales');
+                                break;
+                            case 'purchases':
+                                this.showDataManagement('仕入れ管理', 'purchases');
+                                break;
+                            case 'fixed-costs':
+                                this.showDataManagement('固定費管理', 'fixedCosts');
+                                break;
+                            case 'variable-costs':
+                                this.showVariableCostsManagement();
+                                break;
+                            case 'labor-costs':
+                                this.showDataManagement('人件費管理', 'laborCosts');
+                                break;
+                            case 'consumption-tax':
+                                this.showDataManagement('消費税管理', 'consumptionTax');
+                                break;
+                            case 'monthly-payments':
+                                this.showDataManagement('月々の返済管理', 'monthlyPayments');
+                                break;
+                            case 'manufacturer-deposits':
+                                this.showDataManagement('メーカー保証金管理', 'manufacturerDeposits');
+                                break;
+                            case 'reports':
+                                this.showReports();
+                                break;
+                            case 'stores':
+                                this.showStoreManagement();
+                                break;
+                            case 'backup':
+                                this.showBackupManagement();
+                                break;
+                            default:
+                                this.showDataManagement('売上管理', 'sales');
+                        }
+                        
+                        // ローディング終了
+                        this.loadingManager.hide(loaderId);
+                        
+                        // 成功通知
+                        this.toastManager.show(
+                            `${this.getSectionTitle(section)}を表示しました`,
+                            'success',
+                            2000
+                        );
+                        
+                    } catch (error) {
+                        console.error(`セクション表示エラー (${section}):`, error);
+                        this.loadingManager.hide(loaderId);
+                        this.showEnhancedErrorMessage(
+                            'セクション表示エラー',
+                            `${this.getSectionTitle(section)}の表示に失敗しました: ${error.message}`,
+                            {
+                                showRetry: true,
+                                retryAction: () => this.showSection(section, globalYear, globalMonth)
+                            }
+                        );
+                    }
+                }, 50); // 短い遅延でUIの応答性を保つ
+                
+            } catch (error) {
+                this.loadingManager.hide(loaderId);
+                throw error;
+            }
+        });
+    }
 
-            case 'consumption-tax':
-                this.showDataManagement('消費税管理', 'consumptionTax');
-                break;
-            case 'monthly-payments':
-                this.showDataManagement('月々の返済管理', 'monthlyPayments');
-                break;
-            case 'manufacturer-deposits':
-                this.showDataManagement('メーカー保証金管理', 'manufacturerDeposits');
-                break;
-            case 'reports':
-                this.showReports();
-                break;
-            case 'backup':
-                this.showBackupManagement();
-                break;
-            default:
-                this.showDataManagement('売上管理', 'sales');
-        }
+    /**
+     * セクションタイトル取得
+     */
+    getSectionTitle(section) {
+        const titles = {
+            'sales': '売上管理',
+            'purchases': '仕入れ管理',
+            'fixed-costs': '固定費管理',
+            'variable-costs': '変動費管理',
+            'labor-costs': '人件費管理',
+            'consumption-tax': '消費税管理',
+            'monthly-payments': '月々の返済管理',
+            'manufacturer-deposits': 'メーカー保証金管理',
+            'reports': '収支レポート',
+            'stores': '店舗管理',
+            'backup': 'データ管理'
+        };
+        return titles[section] || section;
     }
 
     /**
@@ -310,40 +1022,233 @@ class UIManager {
     }
 
     /**
-     * データテーブル表示
+     * データテーブル表示（パフォーマンス最適化版）
      */
     renderDataTable(category, data) {
         if (data.length === 0) {
-            return '<p>データがありません。新規追加ボタンからデータを追加してください。</p>';
+            return `
+                <div class="no-data-message">
+                    <p>データがありません。</p>
+                    <p>新規追加ボタンからデータを追加してください。</p>
+                </div>
+            `;
         }
 
-        let tableHTML = '<table class="data-table"><thead><tr>';
-        
-        // ヘッダー生成（カテゴリーに応じて）
+        // 大量データの場合は仮想スクロールを使用
+        const useVirtualScroll = data.length > 100;
+        const storeCount = window.storeManager ? window.storeManager.getStoreCount() : 0;
+        const showDataMove = storeCount > 1;
+
+        // 検索・フィルター機能
+        let tableHTML = `
+            <div class="table-controls">
+                <div class="search-controls">
+                    <input type="text" class="search-input" placeholder="データを検索..." 
+                           onkeyup="uiManager.filterTableData('${category}', this.value)">
+                    <span class="search-results-count" id="search-results-count">
+                        ${data.length}件中${data.length}件表示
+                    </span>
+                </div>
+                ${showDataMove ? `
+                <div class="data-move-controls">
+                    <div class="selection-controls">
+                        <button class="btn btn-secondary" onclick="uiManager.selectAllRecords('${category}')">全選択</button>
+                        <button class="btn btn-secondary" onclick="uiManager.clearSelection('${category}')">選択解除</button>
+                        <button class="btn btn-primary" onclick="uiManager.showDataMoveDialog('${category}')" id="move-selected-btn" disabled>
+                            選択したデータを移動
+                        </button>
+                    </div>
+                    <div class="selection-info">
+                        <span id="selection-count">0件選択中</span>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+
+        if (useVirtualScroll) {
+            tableHTML += this.renderVirtualScrollTable(category, data, showDataMove);
+        } else {
+            tableHTML += this.renderStandardTable(category, data, showDataMove);
+        }
+
+        // パフォーマンス情報表示
+        if (data.length > 50) {
+            tableHTML += `
+                <div class="data-compression-info">
+                    データ件数: ${data.length}件 
+                    ${useVirtualScroll ? '(仮想スクロール使用)' : ''}
+                </div>
+            `;
+        }
+
+        return tableHTML;
+    }
+
+    /**
+     * 標準テーブル表示
+     */
+    renderStandardTable(category, data, showDataMove) {
         const headers = this.getTableHeaders(category);
+        
+        let tableHTML = `
+            <table class="data-table" id="data-table-${category}">
+                <thead>
+                    <tr>
+                        ${showDataMove ? '<th><input type="checkbox" id="select-all-checkbox" onchange="uiManager.toggleSelectAll(this, \'' + category + '\')"></th>' : ''}
+        `;
+        
         headers.forEach(header => {
             tableHTML += `<th>${header}</th>`;
         });
-        tableHTML += '<th>操作</th></tr></thead><tbody>';
+        tableHTML += '<th>操作</th></tr></thead><tbody id="table-body-' + category + '">';
 
         // データ行生成
         data.forEach(record => {
-            tableHTML += '<tr>';
-            headers.forEach(header => {
-                const value = this.getRecordValue(record, header);
-                tableHTML += `<td>${value}</td>`;
-            });
-            tableHTML += `
-                <td>
-                    <button class="btn btn-secondary" onclick="uiManager.showEditForm('${category}', '${record.id}')">編集</button>
-                    <button class="btn btn-danger" onclick="uiManager.deleteRecord('${category}', '${record.id}')">削除</button>
-                </td>
-            `;
-            tableHTML += '</tr>';
+            tableHTML += this.renderTableRow(record, category, headers, showDataMove);
         });
 
         tableHTML += '</tbody></table>';
         return tableHTML;
+    }
+
+    /**
+     * 仮想スクロールテーブル表示
+     */
+    renderVirtualScrollTable(category, data, showDataMove) {
+        const headers = this.getTableHeaders(category);
+        const itemHeight = 50; // 各行の高さ（px）
+        const containerHeight = 400; // コンテナの高さ（px）
+        
+        return `
+            <div class="virtual-scroll-container" id="virtual-scroll-${category}" 
+                 style="height: ${containerHeight}px;" 
+                 onscroll="uiManager.handleVirtualScroll('${category}')">
+                <div class="virtual-scroll-content" id="virtual-content-${category}" 
+                     style="height: ${data.length * itemHeight}px;">
+                    <table class="data-table large-data-table">
+                        <thead style="position: sticky; top: 0; background: white; z-index: 10;">
+                            <tr>
+                                ${showDataMove ? '<th><input type="checkbox" id="select-all-checkbox" onchange="uiManager.toggleSelectAll(this, \'' + category + '\')"></th>' : ''}
+                                ${headers.map(header => `<th>${header}</th>`).join('')}
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="virtual-table-body-${category}">
+                            <!-- 仮想スクロール用の行がここに動的に生成される -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <script>
+                // 仮想スクロールデータを保存
+                window.virtualScrollData = window.virtualScrollData || {};
+                window.virtualScrollData['${category}'] = ${JSON.stringify(data)};
+                // 初期表示
+                uiManager.updateVirtualScrollView('${category}');
+            </script>
+        `;
+    }
+
+    /**
+     * テーブル行生成
+     */
+    renderTableRow(record, category, headers, showDataMove) {
+        let rowHTML = '<tr>';
+        
+        // 複数選択チェックボックス
+        if (showDataMove) {
+            rowHTML += `<td><input type="checkbox" class="record-checkbox" value="${record.id}" onchange="uiManager.updateSelectionCount('${category}')"></td>`;
+        }
+        
+        headers.forEach(header => {
+            const value = this.getRecordValue(record, header);
+            rowHTML += `<td title="${value}">${value}</td>`;
+        });
+        
+        rowHTML += `
+            <td>
+                <button class="btn btn-secondary" onclick="uiManager.showEditForm('${category}', '${record.id}')" title="編集">編集</button>
+                <button class="btn btn-danger" onclick="uiManager.deleteRecord('${category}', '${record.id}')" title="削除">削除</button>
+                ${showDataMove ? `<button class="btn btn-info" onclick="uiManager.showSingleDataMoveDialog('${category}', '${record.id}')" title="移動">移動</button>` : ''}
+            </td>
+        `;
+        rowHTML += '</tr>';
+        
+        return rowHTML;
+    }
+
+    /**
+     * 仮想スクロール処理
+     */
+    handleVirtualScroll(category) {
+        // スクロール位置に基づいて表示する行を更新
+        this.updateVirtualScrollView(category);
+    }
+
+    /**
+     * 仮想スクロールビュー更新
+     */
+    updateVirtualScrollView(category) {
+        const container = document.getElementById(`virtual-scroll-${category}`);
+        const tbody = document.getElementById(`virtual-table-body-${category}`);
+        
+        if (!container || !tbody || !window.virtualScrollData || !window.virtualScrollData[category]) {
+            return;
+        }
+
+        const data = window.virtualScrollData[category];
+        const itemHeight = 50;
+        const containerHeight = container.clientHeight;
+        const scrollTop = container.scrollTop;
+        
+        // 表示範囲を計算
+        const startIndex = Math.floor(scrollTop / itemHeight);
+        const endIndex = Math.min(startIndex + Math.ceil(containerHeight / itemHeight) + 5, data.length);
+        
+        // 表示する行を生成
+        const headers = this.getTableHeaders(category);
+        const storeCount = window.storeManager ? window.storeManager.getStoreCount() : 0;
+        const showDataMove = storeCount > 1;
+        
+        let rowsHTML = '';
+        for (let i = startIndex; i < endIndex; i++) {
+            const record = data[i];
+            if (record) {
+                const rowHTML = this.renderTableRow(record, category, headers, showDataMove);
+                rowsHTML += `<div class="virtual-scroll-item" style="transform: translateY(${i * itemHeight}px);">${rowHTML}</div>`;
+            }
+        }
+        
+        tbody.innerHTML = rowsHTML;
+    }
+
+    /**
+     * テーブルデータフィルタリング
+     */
+    filterTableData(category, searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const tbody = document.getElementById(`table-body-${category}`) || 
+                     document.getElementById(`virtual-table-body-${category}`);
+        
+        if (!tbody) return;
+        
+        const rows = tbody.querySelectorAll('tr');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const isVisible = text.includes(searchLower);
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
+        });
+        
+        // 検索結果数を更新
+        const resultCount = document.getElementById('search-results-count');
+        if (resultCount) {
+            const totalCount = rows.length;
+            resultCount.textContent = `${totalCount}件中${visibleCount}件表示`;
+        }
     }
 
     /**
@@ -371,13 +1276,23 @@ class UIManager {
     }
 
     /**
+     * 安全な数値フォーマット
+     */
+    formatNumber(value) {
+        if (value === undefined || value === null || isNaN(value)) {
+            return '0';
+        }
+        return Number(value).toLocaleString();
+    }
+
+    /**
      * レコード値取得
      */
     getRecordValue(record, header) {
         switch(header) {
             case '年': return record.year;
             case '月': return record.month;
-            case '金額': return record.amount ? record.amount.toLocaleString() + '円' : '';
+            case '金額': return record.amount ? this.formatNumber(record.amount) + '円' : '0円';
             case '備考': return record.note || '';
             case 'カテゴリー': return record.category || '';
             case '返済先': return record.payee || '';
@@ -387,9 +1302,17 @@ class UIManager {
     }
 
     /**
-     * 入力フォーム表示
+     * 入力フォーム表示（店舗未選択エラーハンドリング強化版）
      */
     showInputForm(category) {
+        // 店舗選択状態をチェック
+        const storeCheckResult = this.validateStoreSelection(category);
+        if (!storeCheckResult.isValid) {
+            // 店舗未選択エラーダイアログを表示
+            this.showStoreNotSelectedDialog(category, storeCheckResult.storeCount, storeCheckResult.message);
+            return;
+        }
+        
         const formContainer = document.getElementById('form-container');
         const formHTML = this.generateInputForm(category);
         
@@ -407,6 +1330,79 @@ class UIManager {
         if (yearInput && monthInput) {
             yearInput.value = currentDate.getFullYear();
             monthInput.value = currentDate.getMonth() + 1;
+        }
+        
+        // 店舗情報を表示
+        this.displayCurrentStoreInfo();
+    }
+
+    /**
+     * 店舗選択状態のバリデーション
+     */
+    validateStoreSelection(category) {
+        const storeCount = window.storeManager ? window.storeManager.getStoreCount() : 0;
+        const activeStoreId = window.storeManager ? window.storeManager.getActiveStoreId() : null;
+        
+        // 店舗が登録されていない場合
+        if (storeCount === 0) {
+            return {
+                isValid: false,
+                storeCount: 0,
+                message: '店舗が登録されていません。まず店舗を登録してください。'
+            };
+        }
+        
+        // アクティブ店舗が選択されていない場合
+        if (!activeStoreId) {
+            return {
+                isValid: false,
+                storeCount: storeCount,
+                message: '店舗が選択されていません。ヘッダーの店舗選択ドロップダウンから店舗を選択してください。'
+            };
+        }
+        
+        // アクティブ店舗が存在するかチェック
+        if (window.storeManager) {
+            try {
+                window.storeManager.getStoreById(activeStoreId);
+            } catch (error) {
+                return {
+                    isValid: false,
+                    storeCount: storeCount,
+                    message: '選択された店舗が見つかりません。店舗を再選択してください。'
+                };
+            }
+        }
+        
+        return {
+            isValid: true,
+            storeCount: storeCount,
+            activeStoreId: activeStoreId
+        };
+    }
+
+    /**
+     * 現在の店舗情報を表示
+     */
+    displayCurrentStoreInfo() {
+        if (!window.storeManager) return;
+        
+        try {
+            const activeStore = window.storeManager.getActiveStore();
+            if (activeStore) {
+                // フォーム内に店舗情報を表示
+                const storeInfoElement = document.getElementById('current-store-info');
+                if (storeInfoElement) {
+                    storeInfoElement.innerHTML = `
+                        <div class="current-store-display">
+                            <span class="store-label">入力先店舗:</span>
+                            <span class="store-name">${activeStore.name}</span>
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.warn('店舗情報の表示に失敗しました:', error);
         }
     }
 
@@ -453,13 +1449,27 @@ class UIManager {
         // グローバル日付を使用
         const globalDate = window.app ? window.app.getGlobalDate() : { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
         
+        // 現在のアクティブ店舗情報を取得
+        const activeStore = window.storeManager ? window.storeManager.getActiveStore() : null;
+        const storeName = activeStore ? activeStore.name : 'すべての店舗';
+        
         this.contentArea.innerHTML = `
             <div class="section-header">
                 <h2>収支レポート</h2>
                 <div class="report-controls">
+                    <div class="report-mode-selector">
+                        <label for="report-mode">表示モード:</label>
+                        <select id="report-mode" onchange="uiManager.changeReportMode()">
+                            <option value="single">単一店舗</option>
+                            <option value="consolidated">全店舗統合</option>
+                            <option value="comparison">店舗別比較</option>
+                        </select>
+                    </div>
                     <div class="current-date-display">
                         <span class="date-label">表示中:</span>
                         <span class="date-value">${globalDate.year}年${globalDate.month}月</span>
+                        <span class="store-label">店舗:</span>
+                        <span class="store-value">${storeName}</span>
                         <button class="btn btn-secondary" onclick="uiManager.showYearlyReport()">年間レポート表示</button>
                     </div>
                     <div class="export-controls">
@@ -491,6 +1501,12 @@ class UIManager {
                 </div>
                 <div id="yearly-report" style="display: none;">
                     <!-- 年間レポートがここに表示される -->
+                </div>
+                <div id="consolidated-report" style="display: none;">
+                    <!-- 統合レポートがここに表示される -->
+                </div>
+                <div id="comparison-report" style="display: none;">
+                    <!-- 比較レポートがここに表示される -->
                 </div>
             </div>
         `;
@@ -548,26 +1564,30 @@ class UIManager {
     generateMonthlyReportHTML(balanceData) {
         const { year, month, sales, grossProfit, totalExpenses, profit, isDeficit, deficitWarning, categoryBreakdown, recordCounts } = balanceData;
         
+        // 現在のアクティブ店舗情報を取得
+        const activeStore = window.storeManager ? window.storeManager.getActiveStore() : null;
+        const storeName = activeStore ? activeStore.name : 'すべての店舗';
+        
         let html = `
             <div class="monthly-report">
                 <div class="report-header">
-                    <h3>${year}年${month}月の収支レポート</h3>
+                    <h3>${year}年${month}月の収支レポート（${storeName}）</h3>
                     <div class="report-summary ${isDeficit ? 'deficit' : 'profit'}">
                         <div class="summary-item">
                             <span class="label">売上:</span>
-                            <span class="value income">${sales.toLocaleString()}円</span>
+                            <span class="value income">${this.formatNumber(sales)}円</span>
                         </div>
                         <div class="summary-item">
                             <span class="label">粗利:</span>
-                            <span class="value income">${grossProfit.toLocaleString()}円</span>
+                            <span class="value income">${this.formatNumber(grossProfit)}円</span>
                         </div>
                         <div class="summary-item">
                             <span class="label">支出:</span>
-                            <span class="value expense">${totalExpenses.toLocaleString()}円</span>
+                            <span class="value expense">${this.formatNumber(totalExpenses)}円</span>
                         </div>
                         <div class="summary-item profit-item">
                             <span class="label">${isDeficit ? '赤字:' : '利益:'}</span>
-                            <span class="value ${isDeficit ? 'deficit' : 'profit'}">${Math.abs(profit).toLocaleString()}円</span>
+                            <span class="value ${isDeficit ? 'deficit' : 'profit'}">${this.formatNumber(Math.abs(profit))}円</span>
                         </div>
                         ${balanceData.profitMargin !== undefined ? `
                         <div class="summary-item">
@@ -638,7 +1658,7 @@ class UIManager {
             html += `
                             <div class="breakdown-item">
                                 <span class="category-name">${category.name}</span>
-                                <span class="category-amount expense">${category.amount.toLocaleString()}円</span>
+                                <span class="category-amount expense">${this.formatNumber(category.amount)}円</span>
                                 <span class="category-percentage">(${percentage.toFixed(1)}%)</span>
                                 <span class="category-count">(${category.count}件)</span>
                             </div>
@@ -747,10 +1767,14 @@ class UIManager {
         const { year, totalSales, totalExpenses, totalProfit, averageMonthlyProfit, 
                 deficitMonthsCount, profitableMonthsCount, monthlyResults, yearlyProfitMargin } = yearlyData;
         
+        // 現在のアクティブ店舗情報を取得
+        const activeStore = window.storeManager ? window.storeManager.getActiveStore() : null;
+        const storeName = activeStore ? activeStore.name : 'すべての店舗';
+        
         let html = `
             <div class="yearly-report">
                 <div class="report-header">
-                    <h3>${year}年の年間収支レポート</h3>
+                    <h3>${year}年の年間収支レポート（${storeName}）</h3>
                     <button class="btn btn-secondary" onclick="uiManager.showMonthlyReportFromYearly()">月間レポートに戻る</button>
                     <div class="yearly-summary ${totalProfit < 0 ? 'deficit' : 'profit'}">
                         <div class="summary-grid">
@@ -915,6 +1939,9 @@ class UIManager {
                     <div class="form-header">
                         <h3>${title}</h3>
                         <button type="button" class="close-btn" onclick="uiManager.hideForm()">&times;</button>
+                    </div>
+                    <div id="current-store-info" class="current-store-info">
+                        <!-- 店舗情報がここに表示される -->
                     </div>
                     <form id="data-form" class="data-form">
                         <div class="form-errors" id="form-errors" style="display: none;"></div>
@@ -1270,12 +2297,57 @@ class UIManager {
      * バックアップ管理画面表示
      */
     showBackupManagement() {
+        // 現在のアクティブ店舗情報を取得
+        const activeStore = window.storeManager ? window.storeManager.getActiveStore() : null;
+        const storeName = activeStore ? activeStore.name : 'すべての店舗';
+        
         this.contentArea.innerHTML = `
             <div class="section-header">
                 <h2>データ管理・バックアップ</h2>
                 <div class="section-controls">
-                    <button class="btn btn-primary" onclick="uiManager.showCreateBackupDialog()">手動バックアップ作成</button>
-                    <button class="btn btn-secondary" onclick="uiManager.showImportBackupDialog()">バックアップインポート</button>
+                    <div class="current-store-display">
+                        <span class="store-label">対象店舗:</span>
+                        <span class="store-value">${storeName}</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="uiManager.oneClickExport()">ワンクリックエクスポート</button>
+                    <button class="btn btn-secondary" onclick="uiManager.showCreateBackupDialog()">詳細バックアップ作成</button>
+                </div>
+            </div>
+            
+            <!-- 簡単データ共有セクション -->
+            <div id="easy-sharing-section" class="backup-section">
+                <h3>簡単データ共有</h3>
+                <div class="easy-sharing-controls">
+                    <div class="sharing-option">
+                        <h4>📤 データエクスポート</h4>
+                        <p>現在の店舗データを簡単にエクスポートできます</p>
+                        <div class="sharing-buttons">
+                            <button class="btn btn-primary" onclick="uiManager.oneClickExport()">
+                                📁 ワンクリックエクスポート
+                            </button>
+                            <button class="btn btn-secondary" onclick="uiManager.exportCurrentStoreOnly()">
+                                🏪 現在の店舗のみエクスポート
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="sharing-option">
+                        <h4>📥 データインポート</h4>
+                        <p>ファイルをドラッグ&ドロップするか、ボタンでファイルを選択してください</p>
+                        <div class="drop-zone" id="file-drop-zone">
+                            <div class="drop-zone-content">
+                                <div class="drop-icon">📁</div>
+                                <div class="drop-text">
+                                    <p><strong>ファイルをここにドラッグ&ドロップ</strong></p>
+                                    <p>または</p>
+                                    <button class="btn btn-primary" onclick="uiManager.selectImportFile()">
+                                        ファイルを選択
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                    </div>
                 </div>
             </div>
             <div id="backup-content">
@@ -1336,6 +2408,11 @@ class UIManager {
         
         // フォームイベントの設定
         this.setupBackupFormEvents();
+        
+        // ファイルインポートの初期化
+        setTimeout(() => {
+            this.initializeFileImport();
+        }, 100);
     }
 
     /**
@@ -1632,16 +2709,19 @@ class UIManager {
      */
     async exportCurrentMonth() {
         try {
-            const year = parseInt(document.getElementById('report-year').value);
-            const month = parseInt(document.getElementById('report-month').value);
+            // グローバル日付を使用
+            const globalDate = window.app ? window.app.getGlobalDate() : { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
+            const activeStore = window.storeManager ? window.storeManager.getActiveStore() : null;
+            const storeName = activeStore ? activeStore.name : 'AllStores';
             
             const result = this.dataManager.exportToCSV({
                 exportType: 'monthly',
-                year: year,
-                month: month
+                year: globalDate.year,
+                month: globalDate.month,
+                storeName: storeName
             });
             
-            this.showMessage(`${year}年${month}月のデータをCSVエクスポートしました（${result.recordCount}件）`, 'success');
+            this.showMessage(`${globalDate.year}年${globalDate.month}月（${activeStore ? activeStore.name : 'すべての店舗'}）のデータをCSVエクスポートしました（${result.recordCount}件）`, 'success');
             this.toggleExportDropdown(); // ドロップダウンを閉じる
             
         } catch (error) {
@@ -1655,14 +2735,18 @@ class UIManager {
      */
     async exportCurrentYear() {
         try {
-            const year = parseInt(document.getElementById('report-year').value);
+            // グローバル日付を使用
+            const globalDate = window.app ? window.app.getGlobalDate() : { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
+            const activeStore = window.storeManager ? window.storeManager.getActiveStore() : null;
+            const storeName = activeStore ? activeStore.name : 'AllStores';
             
             const result = this.dataManager.exportToCSV({
                 exportType: 'yearly',
-                year: year
+                year: globalDate.year,
+                storeName: storeName
             });
             
-            this.showMessage(`${year}年のデータをCSVエクスポートしました（${result.recordCount}件）`, 'success');
+            this.showMessage(`${globalDate.year}年（${activeStore ? activeStore.name : 'すべての店舗'}）のデータをCSVエクスポートしました（${result.recordCount}件）`, 'success');
             this.toggleExportDropdown(); // ドロップダウンを閉じる
             
         } catch (error) {
@@ -1676,15 +2760,20 @@ class UIManager {
      */
     async exportAllData() {
         try {
-            if (!confirm('全データをCSVエクスポートしますか？データ量が多い場合、時間がかかる場合があります。')) {
+            const activeStore = window.storeManager ? window.storeManager.getActiveStore() : null;
+            const storeText = activeStore ? `（${activeStore.name}）` : '（すべての店舗）';
+            
+            if (!confirm(`全データ${storeText}をCSVエクスポートしますか？データ量が多い場合、時間がかかる場合があります。`)) {
                 return;
             }
             
+            const storeName = activeStore ? activeStore.name : 'AllStores';
             const result = this.dataManager.exportToCSV({
-                exportType: 'all'
+                exportType: 'all',
+                storeName: storeName
             });
             
-            this.showMessage(`全データをCSVエクスポートしました（${result.recordCount}件）`, 'success');
+            this.showMessage(`全データ${storeText}をCSVエクスポートしました（${result.recordCount}件）`, 'success');
             this.toggleExportDropdown(); // ドロップダウンを閉じる
             
         } catch (error) {
@@ -2063,5 +3152,1205 @@ class UIManager {
     showMonthlyReportFromYearly() {
         document.getElementById('yearly-report').style.display = 'none';
         document.getElementById('monthly-report').style.display = 'block';
+    }
+
+    /**
+     * レポートモード変更処理
+     */
+    changeReportMode() {
+        const reportMode = document.getElementById('report-mode').value;
+        const globalDate = window.app ? window.app.getGlobalDate() : { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
+
+        // すべてのレポートを非表示
+        document.getElementById('monthly-report').style.display = 'none';
+        document.getElementById('yearly-report').style.display = 'none';
+        document.getElementById('consolidated-report').style.display = 'none';
+        document.getElementById('comparison-report').style.display = 'none';
+
+        switch (reportMode) {
+            case 'single':
+                document.getElementById('monthly-report').style.display = 'block';
+                this.showMonthlyReport(globalDate.year, globalDate.month);
+                break;
+            case 'consolidated':
+                document.getElementById('consolidated-report').style.display = 'block';
+                this.showConsolidatedReport(globalDate.year, globalDate.month);
+                break;
+            case 'comparison':
+                document.getElementById('comparison-report').style.display = 'block';
+                this.showComparisonReport(globalDate.year, globalDate.month);
+                break;
+        }
+    }
+
+    /**
+     * 統合レポート表示
+     */
+    showConsolidatedReport(year, month) {
+        try {
+            const chartManager = new ChartManager(this.dataManager);
+            const consolidatedData = chartManager.calculateConsolidatedBalance(year, month);
+            
+            const reportHTML = this.generateConsolidatedReportHTML(consolidatedData);
+            document.getElementById('consolidated-report').innerHTML = reportHTML;
+            
+            // グラフを描画（DOM要素が作成された後に実行）
+            setTimeout(() => {
+                chartManager.renderConsolidatedChart(year, month);
+            }, 100);
+            
+        } catch (error) {
+            console.error('統合レポート生成エラー:', error);
+            document.getElementById('consolidated-report').innerHTML = 
+                `<div class="error-message">統合レポートの生成に失敗しました: ${error.message}</div>`;
+        }
+    }
+
+    /**
+     * 比較レポート表示
+     */
+    showComparisonReport(year, month) {
+        try {
+            const chartManager = new ChartManager(this.dataManager);
+            const comparisonData = chartManager.calculateStoreComparison(year, month);
+            
+            const reportHTML = this.generateComparisonReportHTML(comparisonData, year, month);
+            document.getElementById('comparison-report').innerHTML = reportHTML;
+            
+        } catch (error) {
+            console.error('比較レポート生成エラー:', error);
+            document.getElementById('comparison-report').innerHTML = 
+                `<div class="error-message">比較レポートの生成に失敗しました: ${error.message}</div>`;
+        }
+    }
+
+    /**
+     * 統合レポートHTML生成
+     */
+    generateConsolidatedReportHTML(consolidatedData) {
+        const { year, month, sales, totalExpenses, profit, isDeficit, profitMargin, storeCount } = consolidatedData;
+        
+        let html = `
+            <div class="consolidated-report">
+                <div class="report-header">
+                    <h3>${year}年${month}月の全店舗統合レポート（${storeCount}店舗）</h3>
+                    <div class="report-summary ${isDeficit ? 'deficit' : 'profit'}">
+                        <div class="summary-item">
+                            <span class="label">統合売上:</span>
+                            <span class="value income">${sales.toLocaleString()}円</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">統合支出:</span>
+                            <span class="value expense">${totalExpenses.toLocaleString()}円</span>
+                        </div>
+                        <div class="summary-item profit-item">
+                            <span class="label">統合${isDeficit ? '赤字:' : '利益:'}</span>
+                            <span class="value ${isDeficit ? 'deficit' : 'profit'}">${Math.abs(profit).toLocaleString()}円</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">利益率:</span>
+                            <span class="value">${profitMargin.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="charts-section">
+                    <h4>統合グラフ表示</h4>
+                    <div class="charts-container">
+                        <div class="chart-item">
+                            <div class="chart-wrapper">
+                                <canvas id="consolidatedExpenseChart" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-item">
+                            <div class="chart-wrapper">
+                                <canvas id="consolidatedIncomeChart" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return html;
+    }
+
+    /**
+     * 比較レポートHTML生成
+     */
+    generateComparisonReportHTML(comparisonData, year, month) {
+        let html = `
+            <div class="comparison-report">
+                <div class="report-header">
+                    <h3>${year}年${month}月の店舗別比較レポート</h3>
+                </div>
+                
+                <div class="comparison-table-container">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>順位</th>
+                                <th>店舗名</th>
+                                <th>売上</th>
+                                <th>支出</th>
+                                <th>利益</th>
+                                <th>利益率</th>
+                                <th>状況</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+
+        if (comparisonData.length === 0) {
+            html += `
+                            <tr>
+                                <td colspan="7" class="no-data">データがありません</td>
+                            </tr>
+            `;
+        } else {
+            comparisonData.forEach((storeData, index) => {
+                const rank = index + 1;
+                const rankClass = rank === 1 ? 'rank-first' : rank === 2 ? 'rank-second' : rank === 3 ? 'rank-third' : '';
+                
+                html += `
+                            <tr class="comparison-row ${rankClass}">
+                                <td class="rank">${rank}</td>
+                                <td class="store-name">${storeData.store.name}</td>
+                                <td class="amount income">${storeData.totalSales.toLocaleString()}円</td>
+                                <td class="amount expense">${storeData.totalExpenses.toLocaleString()}円</td>
+                                <td class="amount ${storeData.isDeficit ? 'deficit' : 'profit'}">${Math.abs(storeData.profit).toLocaleString()}円</td>
+                                <td class="percentage">${storeData.profitMargin.toFixed(1)}%</td>
+                                <td class="status">
+                                    <span class="status-badge ${storeData.isDeficit ? 'status-deficit' : 'status-profit'}">
+                                        ${storeData.isDeficit ? '赤字' : '黒字'}
+                                    </span>
+                                </td>
+                            </tr>
+                `;
+            });
+        }
+
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        return html;
+    }
+
+    /**
+     * 店舗管理画面表示
+     */
+    showStoreManagement() {
+        if (!window.storeManager) {
+            this.contentArea.innerHTML = '<div class="error-message">店舗管理機能が利用できません。</div>';
+            return;
+        }
+
+        const stores = window.storeManager.getStores();
+        const activeStore = window.storeManager.getActiveStore();
+
+        this.contentArea.innerHTML = `
+            <div class="section-header">
+                <h2>店舗管理</h2>
+                <div class="section-controls">
+                    <button class="btn btn-secondary" onclick="uiManager.showDataMoveHistory()">
+                        📋 データ移動履歴
+                    </button>
+                    <div class="current-store-display">
+                        <span class="store-label">アクティブ店舗:</span>
+                        <span class="store-value">${activeStore ? activeStore.name : 'なし'}</span>
+                        <span class="store-count">(${stores.length}店舗)</span>
+                    </div>
+                    <button class="btn" onclick="uiManager.showStoreForm()">新規店舗追加</button>
+                </div>
+            </div>
+            <div id="store-display">
+                ${this.renderStoreTable(stores)}
+            </div>
+            <div id="store-form-container" style="display: none;">
+                <!-- 店舗フォームは動的に生成 -->
+            </div>
+        `;
+    }
+
+    /**
+     * 店舗テーブル表示
+     */
+    renderStoreTable(stores) {
+        if (stores.length === 0) {
+            return '<p>店舗がありません。新規店舗追加ボタンから店舗を追加してください。</p>';
+        }
+
+        let tableHTML = '<table class="data-table"><thead><tr>';
+        tableHTML += '<th>店舗名</th><th>住所</th><th>開店日</th><th>備考</th><th>状態</th><th>操作</th>';
+        tableHTML += '</tr></thead><tbody>';
+
+        const activeStoreId = window.storeManager.getActiveStoreId();
+
+        stores.forEach(store => {
+            const isActive = store.id === activeStoreId;
+            tableHTML += `<tr ${isActive ? 'class="active-store"' : ''}>`;
+            tableHTML += `<td><strong>${store.name}</strong></td>`;
+            tableHTML += `<td>${store.address || '-'}</td>`;
+            tableHTML += `<td>${store.openDate || '-'}</td>`;
+            tableHTML += `<td>${store.note || '-'}</td>`;
+            tableHTML += `<td>${isActive ? '<span class="status-active">アクティブ</span>' : '<span class="status-inactive">非アクティブ</span>'}</td>`;
+            tableHTML += `<td>`;
+            if (!isActive) {
+                tableHTML += `<button class="btn btn-secondary" onclick="uiManager.setActiveStore('${store.id}')">アクティブにする</button> `;
+            }
+            tableHTML += `<button class="btn btn-secondary" onclick="uiManager.showStoreEditForm('${store.id}')">編集</button> `;
+            if (stores.length > 1) {
+                tableHTML += `<button class="btn btn-danger" onclick="uiManager.deleteStore('${store.id}')">削除</button>`;
+            }
+            tableHTML += `</td>`;
+            tableHTML += '</tr>';
+        });
+
+        tableHTML += '</tbody></table>';
+        return tableHTML;
+    }
+
+    /**
+     * 店舗フォーム表示
+     */
+    showStoreForm(storeData = null) {
+        const isEdit = storeData !== null;
+        const formTitle = isEdit ? '店舗編集' : '新規店舗追加';
+        
+        const formContainer = document.getElementById('store-form-container');
+        formContainer.innerHTML = `
+            <div class="form-overlay">
+                <div class="form-modal">
+                    <div class="form-header">
+                        <h3>${formTitle}</h3>
+                        <button class="close-btn" onclick="uiManager.hideStoreForm()">&times;</button>
+                    </div>
+                    <form class="data-form" id="store-form">
+                        <div class="form-group">
+                            <label for="store-name">店舗名 <span class="required">*</span></label>
+                            <input type="text" id="store-name" name="name" value="${storeData ? storeData.name : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="store-address">住所</label>
+                            <input type="text" id="store-address" name="address" value="${storeData ? storeData.address : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="store-openDate">開店日</label>
+                            <input type="date" id="store-openDate" name="openDate" value="${storeData ? storeData.openDate : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="store-note">備考</label>
+                            <textarea id="store-note" name="note">${storeData ? storeData.note : ''}</textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="uiManager.hideStoreForm()">キャンセル</button>
+                            <button type="submit" class="btn btn-primary">${isEdit ? '更新' : '追加'}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        formContainer.style.display = 'block';
+        
+        // フォーム送信イベント
+        document.getElementById('store-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleStoreFormSubmit(isEdit ? storeData.id : null);
+        });
+    }
+
+    /**
+     * 店舗編集フォーム表示
+     */
+    showStoreEditForm(storeId) {
+        try {
+            const store = window.storeManager.getStoreById(storeId);
+            this.showStoreForm(store);
+        } catch (error) {
+            this.showMessage('店舗情報の取得に失敗しました: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * 店舗フォーム非表示
+     */
+    hideStoreForm() {
+        const formContainer = document.getElementById('store-form-container');
+        formContainer.style.display = 'none';
+        formContainer.innerHTML = '';
+    }
+
+    /**
+     * 店舗フォーム送信処理
+     */
+    handleStoreFormSubmit(storeId = null) {
+        try {
+            const formData = new FormData(document.getElementById('store-form'));
+            const storeData = {
+                name: formData.get('name'),
+                address: formData.get('address'),
+                openDate: formData.get('openDate'),
+                note: formData.get('note')
+            };
+
+            if (storeId) {
+                // 更新
+                window.storeManager.updateStore(storeId, storeData);
+                this.showMessage('店舗情報を更新しました', 'success');
+            } else {
+                // 新規追加
+                window.storeManager.addStore(storeData);
+                this.showMessage('新しい店舗を追加しました', 'success');
+            }
+
+            this.hideStoreForm();
+            this.showStoreManagement(); // 画面を再描画
+            
+            // グローバル店舗選択も更新
+            if (window.app) {
+                window.app.initGlobalStoreSelector();
+            }
+
+        } catch (error) {
+            this.showMessage('店舗の保存に失敗しました: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * アクティブ店舗設定
+     */
+    setActiveStore(storeId) {
+        try {
+            window.storeManager.setActiveStore(storeId);
+            this.showMessage('アクティブ店舗を変更しました', 'success');
+            this.showStoreManagement(); // 画面を再描画
+            
+            // グローバル店舗選択も更新
+            if (window.app) {
+                window.app.initGlobalStoreSelector();
+            }
+        } catch (error) {
+            this.showMessage('アクティブ店舗の変更に失敗しました: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * 店舗削除
+     */
+    deleteStore(storeId) {
+        try {
+            const store = window.storeManager.getStoreById(storeId);
+            if (confirm(`店舗「${store.name}」を削除しますか？\n\n注意: この店舗に関連するデータも削除される可能性があります。`)) {
+                window.storeManager.deleteStore(storeId);
+                this.showMessage('店舗を削除しました', 'success');
+                this.showStoreManagement(); // 画面を再描画
+                
+                // グローバル店舗選択も更新
+                if (window.app) {
+                    window.app.initGlobalStoreSelector();
+                }
+            }
+        } catch (error) {
+            this.showMessage('店舗の削除に失敗しました: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * ワンクリックエクスポート機能
+     */
+    oneClickExport() {
+        try {
+            const activeStore = window.storeManager ? window.storeManager.getActiveStore() : null;
+            const storeName = activeStore ? activeStore.name : 'AllStores';
+            const currentDate = new Date();
+            const dateString = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD形式
+            
+            // 自動ファイル名生成
+            const filename = `kaikei-${dateString}-${storeName}`;
+            
+            const result = this.dataManager.exportToFile(filename);
+            
+            if (result.success) {
+                this.showMessage(`データを「${result.filename}」としてエクスポートしました`, 'success');
+            } else {
+                throw new Error('エクスポートに失敗しました');
+            }
+            
+        } catch (error) {
+            console.error('ワンクリックエクスポートエラー:', error);
+            this.showMessage('エクスポートに失敗しました: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * 現在の店舗のみエクスポート
+     */
+    exportCurrentStoreOnly() {
+        try {
+            const activeStore = window.storeManager ? window.storeManager.getActiveStore() : null;
+            
+            if (!activeStore) {
+                this.showMessage('店舗が選択されていません', 'error');
+                return;
+            }
+            
+            const storeData = this.dataManager.getDataByStore(activeStore.id);
+            const currentDate = new Date();
+            const dateString = currentDate.toISOString().split('T')[0];
+            
+            // 店舗情報も含めてエクスポート
+            const exportData = {
+                store: activeStore,
+                data: storeData,
+                exportInfo: {
+                    exportDate: new Date().toISOString(),
+                    exportType: 'single-store',
+                    storeName: activeStore.name,
+                    version: '1.0'
+                }
+            };
+            
+            const jsonData = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kaikei-${dateString}-${activeStore.name}-only.json`;
+            
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            URL.revokeObjectURL(url);
+            
+            this.showMessage(`店舗「${activeStore.name}」のデータをエクスポートしました`, 'success');
+            
+        } catch (error) {
+            console.error('店舗別エクスポートエラー:', error);
+            this.showMessage('エクスポートに失敗しました: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * ファイル選択ダイアログを開く
+     */
+    selectImportFile() {
+        const fileInput = document.getElementById('import-file-input');
+        fileInput.click();
+    }
+
+    /**
+     * ドラッグ&ドロップとファイル選択の初期化
+     */
+    initializeFileImport() {
+        const dropZone = document.getElementById('file-drop-zone');
+        const fileInput = document.getElementById('import-file-input');
+        
+        if (!dropZone || !fileInput) return;
+
+        // ドラッグ&ドロップイベント
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                this.handleImportFile(files[0]);
+            }
+        });
+
+        // ファイル選択イベント
+        fileInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files.length > 0) {
+                this.handleImportFile(files[0]);
+            }
+        });
+    }
+
+    /**
+     * インポートファイル処理
+     */
+    async handleImportFile(file) {
+        try {
+            if (!file.name.endsWith('.json')) {
+                this.showMessage('JSONファイルを選択してください', 'error');
+                return;
+            }
+
+            this.showMessage('ファイルを読み込み中...', 'info');
+
+            const fileContent = await this.readFileAsText(file);
+            const importData = JSON.parse(fileContent);
+
+            // データ形式の判定
+            if (importData.exportInfo && importData.exportInfo.exportType === 'single-store') {
+                // 単一店舗データのインポート
+                await this.importSingleStoreData(importData);
+            } else {
+                // 全データのインポート
+                await this.importAllData(importData);
+            }
+
+        } catch (error) {
+            console.error('ファイルインポートエラー:', error);
+            this.showMessage('ファイルのインポートに失敗しました: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * ファイルをテキストとして読み込み
+     */
+    readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(new Error('ファイルの読み込みに失敗しました'));
+            reader.readAsText(file);
+        });
+    }
+
+    /**
+     * 単一店舗データのインポート
+     */
+    async importSingleStoreData(importData) {
+        try {
+            const { store, data, exportInfo } = importData;
+            
+            if (!store || !data) {
+                throw new Error('無効な店舗データファイルです');
+            }
+
+            const confirmMessage = `店舗「${store.name}」のデータをインポートしますか？\n\n` +
+                                 `エクスポート日時: ${new Date(exportInfo.exportDate).toLocaleString()}\n` +
+                                 `既存の同名店舗がある場合は上書きされます。`;
+
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            // 店舗が存在するかチェック
+            let existingStore = null;
+            try {
+                const stores = window.storeManager.getStores();
+                existingStore = stores.find(s => s.name === store.name);
+            } catch (error) {
+                // 店舗が見つからない場合は新規作成
+            }
+
+            let targetStoreId;
+            if (existingStore) {
+                // 既存店舗を更新
+                window.storeManager.updateStore(existingStore.id, {
+                    name: store.name,
+                    address: store.address,
+                    openDate: store.openDate,
+                    note: store.note
+                });
+                targetStoreId = existingStore.id;
+            } else {
+                // 新規店舗を作成
+                const newStore = window.storeManager.addStore({
+                    name: store.name,
+                    address: store.address || '',
+                    openDate: store.openDate || '',
+                    note: store.note || ''
+                });
+                targetStoreId = newStore.id;
+            }
+
+            // データをインポート
+            let importedCount = 0;
+            for (const category in data) {
+                if (Array.isArray(data[category])) {
+                    for (const record of data[category]) {
+                        // storeIdを新しい店舗IDに更新
+                        record.storeId = targetStoreId;
+                        record.importedAt = new Date().toISOString();
+                        
+                        this.dataManager.addRecord(category, record, targetStoreId);
+                        importedCount++;
+                    }
+                }
+            }
+
+            this.showMessage(`店舗「${store.name}」のデータを正常にインポートしました（${importedCount}件）`, 'success');
+            
+            // グローバル店舗選択を更新
+            if (window.app) {
+                window.app.initGlobalStoreSelector();
+            }
+
+        } catch (error) {
+            console.error('単一店舗データインポートエラー:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 全データのインポート
+     */
+    async importAllData(importData) {
+        try {
+            const confirmMessage = 'すべてのデータをインポートしますか？\n\n' +
+                                 '既存のデータは上書きされる可能性があります。\n' +
+                                 'バックアップを取ることをお勧めします。';
+
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            // DataManagerのインポート機能を使用
+            const result = await this.dataManager.importFromFile(new Blob([JSON.stringify(importData)], { type: 'application/json' }));
+            
+            if (result.success) {
+                this.showMessage(result.message + `（${result.recordCount}件）`, 'success');
+                
+                // 画面を再読み込みして最新データを表示
+                if (window.app) {
+                    window.location.reload();
+                }
+            } else {
+                throw new Error('インポートに失敗しました');
+            }
+
+        } catch (error) {
+            console.error('全データインポートエラー:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 全選択機能
+     */
+    selectAllRecords(category) {
+        const checkboxes = document.querySelectorAll(`#data-table-${category} .record-checkbox`);
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = true;
+        }
+        
+        this.updateSelectionCount(category);
+    }
+
+    /**
+     * 選択解除機能
+     */
+    clearSelection(category) {
+        const checkboxes = document.querySelectorAll(`#data-table-${category} .record-checkbox`);
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = false;
+        }
+        
+        this.updateSelectionCount(category);
+    }
+
+    /**
+     * 全選択チェックボックスの切り替え
+     */
+    toggleSelectAll(selectAllCheckbox, category) {
+        const checkboxes = document.querySelectorAll(`#data-table-${category} .record-checkbox`);
+        
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+        
+        this.updateSelectionCount(category);
+    }
+
+    /**
+     * 選択数の更新
+     */
+    updateSelectionCount(category) {
+        const checkboxes = document.querySelectorAll(`#data-table-${category} .record-checkbox:checked`);
+        const count = checkboxes.length;
+        
+        const selectionCountElement = document.getElementById('selection-count');
+        const moveButton = document.getElementById('move-selected-btn');
+        
+        if (selectionCountElement) {
+            selectionCountElement.textContent = `${count}件選択中`;
+        }
+        
+        if (moveButton) {
+            moveButton.disabled = count === 0;
+        }
+        
+        // 全選択チェックボックスの状態更新
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        const allCheckboxes = document.querySelectorAll(`#data-table-${category} .record-checkbox`);
+        
+        if (selectAllCheckbox && allCheckboxes.length > 0) {
+            selectAllCheckbox.checked = checkboxes.length === allCheckboxes.length;
+            selectAllCheckbox.indeterminate = checkboxes.length > 0 && checkboxes.length < allCheckboxes.length;
+        }
+    }
+
+    /**
+     * データ移動ダイアログ表示（複数選択）
+     */
+    showDataMoveDialog(category) {
+        const selectedCheckboxes = document.querySelectorAll(`#data-table-${category} .record-checkbox:checked`);
+        const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+        
+        if (selectedIds.length === 0) {
+            this.showMessage('移動するデータを選択してください', 'error');
+            return;
+        }
+        
+        this.showDataMoveDialogInternal(category, selectedIds);
+    }
+
+    /**
+     * 単一データ移動ダイアログ表示
+     */
+    showSingleDataMoveDialog(category, recordId) {
+        this.showDataMoveDialogInternal(category, [recordId]);
+    }
+
+    /**
+     * データ移動ダイアログ表示（内部処理）
+     */
+    showDataMoveDialogInternal(category, recordIds) {
+        if (!window.storeManager) {
+            this.showMessage('店舗管理機能が利用できません', 'error');
+            return;
+        }
+
+        const stores = window.storeManager.getStores();
+        const currentStoreId = window.storeManager.getActiveStoreId();
+        
+        // 移動先店舗のオプション生成
+        let storeOptions = '';
+        stores.forEach(store => {
+            if (store.id !== currentStoreId) {
+                storeOptions += `<option value="${store.id}">${store.name}</option>`;
+            }
+        });
+        
+        if (!storeOptions) {
+            this.showMessage('移動先の店舗がありません', 'error');
+            return;
+        }
+
+        // ダイアログHTML生成
+        const dialogHTML = `
+            <div class="modal" id="data-move-modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>データ移動</h3>
+                        <button type="button" class="close-btn" onclick="uiManager.hideDataMoveDialog()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="move-info">
+                            <p><strong>移動対象:</strong> ${recordIds.length}件のデータ</p>
+                            <p><strong>現在の店舗:</strong> ${window.storeManager.getActiveStore()?.name || '不明'}</p>
+                        </div>
+                        <form id="data-move-form">
+                            <div class="form-group">
+                                <label for="target-store">移動先店舗:</label>
+                                <select id="target-store" name="targetStore" required>
+                                    <option value="">移動先を選択してください</option>
+                                    ${storeOptions}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="move-reason">移動理由（任意）:</label>
+                                <textarea id="move-reason" name="reason" placeholder="例: 誤って別店舗で入力したため" maxlength="200"></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="uiManager.hideDataMoveDialog()">キャンセル</button>
+                                <button type="submit" class="btn btn-primary">移動実行</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // ダイアログを表示
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+        
+        // フォーム送信イベント
+        document.getElementById('data-move-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.executeDataMove(category, recordIds);
+        });
+    }
+
+    /**
+     * データ移動ダイアログを閉じる
+     */
+    hideDataMoveDialog() {
+        const modal = document.getElementById('data-move-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    /**
+     * データ移動実行（重複チェック強化版）
+     */
+    async executeDataMove(category, recordIds) {
+        try {
+            const targetStoreId = document.getElementById('target-store').value;
+            const reason = document.getElementById('move-reason').value;
+            
+            if (!targetStoreId) {
+                this.showMessage('移動先店舗を選択してください', 'error');
+                return;
+            }
+
+            const targetStore = window.storeManager.getStoreById(targetStoreId);
+            
+            // データ移動実行
+            let movedCount = 0;
+            let duplicateCount = 0;
+            const errors = [];
+            
+            for (const recordId of recordIds) {
+                try {
+                    await this.dataManager.moveRecordToStore(category, recordId, targetStoreId);
+                    movedCount++;
+                } catch (error) {
+                    if (error.message === 'DUPLICATE_CONFIRMATION_REQUIRED') {
+                        // 重複確認が必要な場合は、この関数を一時停止して確認ダイアログを待つ
+                        return;
+                    } else {
+                        console.error('データ移動エラー:', error);
+                        errors.push(`レコード ${recordId}: ${error.message}`);
+                    }
+                }
+            }
+
+            // 移動履歴を記録
+            this.recordDataMoveHistory(category, recordIds, targetStoreId, reason, movedCount, errors);
+
+            // 結果表示
+            if (movedCount > 0) {
+                let successMessage = `${movedCount}件のデータを「${targetStore.name}」に移動しました`;
+                if (duplicateCount > 0) {
+                    successMessage += `\n\n注意: ${duplicateCount}件で重複データが検出されました。`;
+                }
+                this.showMessage(successMessage, 'success');
+                
+                // 画面を再描画
+                this.showSection(this.currentSection);
+            }
+            
+            if (errors.length > 0) {
+                console.error('データ移動エラー:', errors);
+                this.showMessage(`${errors.length}件の移動に失敗しました`, 'error');
+            }
+
+            this.hideDataMoveDialog();
+
+        } catch (error) {
+            console.error('データ移動実行エラー:', error);
+            this.showMessage('データ移動に失敗しました: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * データ移動時の重複確認ダイアログ表示
+     */
+    showDataMoveDuplicateConfirmDialog(recordId, category, targetStoreId, duplicates, warnings, record) {
+        const targetStore = window.storeManager.getStoreById(targetStoreId);
+        
+        const dialogHTML = `
+            <div class="modal-overlay" id="duplicate-confirm-modal">
+                <div class="modal-content duplicate-dialog">
+                    <div class="modal-header">
+                        <h3>⚠️ 重複データの確認</h3>
+                    </div>
+                    <div class="modal-body">
+                        <div class="duplicate-warning">
+                            <p><strong>移動先店舗「${targetStore.name}」に類似データが見つかりました。</strong></p>
+                            <p>移動を続行しますか？</p>
+                        </div>
+                        
+                        <div class="record-info">
+                            <h4>移動対象データ:</h4>
+                            <div class="record-details">
+                                <p>年月: ${record.year}年${record.month}月</p>
+                                <p>金額: ${record.amount.toLocaleString()}円</p>
+                                ${record.category ? `<p>カテゴリー: ${record.category}</p>` : ''}
+                                ${record.note ? `<p>備考: ${record.note}</p>` : ''}
+                            </div>
+                        </div>
+                        
+                        ${duplicates.length > 0 ? `
+                        <div class="duplicates-section">
+                            <h4>重複データ (${duplicates.length}件):</h4>
+                            <div class="duplicates-list">
+                                ${duplicates.map(dup => `
+                                    <div class="duplicate-item ${dup.type}">
+                                        <span class="duplicate-type">[${dup.type === 'exact' ? '完全一致' : '類似'}]</span>
+                                        <span class="duplicate-details">
+                                            ${dup.record.year}年${dup.record.month}月 - ${dup.record.amount.toLocaleString()}円
+                                            ${dup.record.note ? ` (${dup.record.note})` : ''}
+                                        </span>
+                                        <span class="duplicate-message">${dup.message}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        ${warnings.length > 0 ? `
+                        <div class="warnings-section">
+                            <h4>警告 (${warnings.length}件):</h4>
+                            <div class="warnings-list">
+                                ${warnings.map(warning => `
+                                    <div class="warning-item">
+                                        <span class="warning-message">${warning.message}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="confirmation-options">
+                            <label>
+                                <input type="checkbox" id="skip-future-duplicates"> 
+                                今後の重複チェックをスキップ（このセッション中のみ）
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" onclick="uiManager.confirmDataMoveWithDuplicates('${recordId}', '${category}', '${targetStoreId}')">
+                            移動を続行
+                        </button>
+                        <button class="btn btn-secondary" onclick="uiManager.hideDuplicateConfirmDialog()">
+                            キャンセル
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+    }
+
+    /**
+     * 重複確認後のデータ移動実行
+     */
+    async confirmDataMoveWithDuplicates(recordId, category, targetStoreId) {
+        try {
+            const skipFutureDuplicates = document.getElementById('skip-future-duplicates').checked;
+            
+            // 重複チェックをスキップしてデータ移動を実行
+            await this.dataManager.moveRecordToStore(category, recordId, targetStoreId, true);
+            
+            this.hideDuplicateConfirmDialog();
+            
+            const targetStore = window.storeManager.getStoreById(targetStoreId);
+            this.showMessage(`データを「${targetStore.name}」に移動しました`, 'success');
+            
+            // 画面を更新
+            this.showSection(this.currentSection);
+            
+        } catch (error) {
+            console.error('重複確認後のデータ移動エラー:', error);
+            this.showMessage('データ移動に失敗しました: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * 重複確認ダイアログを閉じる
+     */
+    hideDuplicateConfirmDialog() {
+        const modal = document.getElementById('duplicate-confirm-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    /**
+     * データ移動履歴の記録
+     */
+    recordDataMoveHistory(category, recordIds, targetStoreId, reason, movedCount, errors) {
+        try {
+            const currentStore = window.storeManager.getActiveStore();
+            const targetStore = window.storeManager.getStoreById(targetStoreId);
+            
+            const historyRecord = {
+                id: this.dataManager.generateUUID(),
+                timestamp: new Date().toISOString(),
+                category: category,
+                recordIds: recordIds,
+                fromStoreId: currentStore?.id,
+                fromStoreName: currentStore?.name,
+                toStoreId: targetStoreId,
+                toStoreName: targetStore.name,
+                reason: reason || '',
+                movedCount: movedCount,
+                totalCount: recordIds.length,
+                errors: errors
+            };
+
+            // ローカルストレージに履歴を保存
+            const historyKey = 'kaikei-data-move-history';
+            const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
+            existingHistory.push(historyRecord);
+            
+            // 最新100件のみ保持
+            if (existingHistory.length > 100) {
+                existingHistory.splice(0, existingHistory.length - 100);
+            }
+            
+            localStorage.setItem(historyKey, JSON.stringify(existingHistory));
+            
+            console.log('データ移動履歴を記録しました:', historyRecord);
+
+        } catch (error) {
+            console.error('移動履歴の記録に失敗しました:', error);
+        }
+    }
+
+    /**
+     * データ移動履歴表示
+     */
+    showDataMoveHistory() {
+        try {
+            const historyKey = 'kaikei-data-move-history';
+            const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+            
+            if (history.length === 0) {
+                this.showMessage('データ移動履歴がありません', 'info');
+                return;
+            }
+
+            let historyHTML = `
+                <div class="modal" id="move-history-modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>データ移動履歴</h3>
+                            <button type="button" class="close-btn" onclick="uiManager.hideMoveHistoryDialog()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="history-list">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>日時</th>
+                                            <th>カテゴリー</th>
+                                            <th>移動元</th>
+                                            <th>移動先</th>
+                                            <th>件数</th>
+                                            <th>理由</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+            `;
+
+            history.reverse().forEach(record => {
+                const timestamp = new Date(record.timestamp).toLocaleString('ja-JP');
+                const categoryName = this.getCategoryDisplayName(record.category);
+                const status = record.movedCount === record.totalCount ? '成功' : 
+                              record.movedCount > 0 ? '部分成功' : '失敗';
+                const statusClass = record.movedCount === record.totalCount ? 'success' : 
+                                   record.movedCount > 0 ? 'warning' : 'error';
+
+                historyHTML += `
+                    <tr>
+                        <td>${timestamp}</td>
+                        <td>${categoryName}</td>
+                        <td>${record.fromStoreName || '不明'}</td>
+                        <td>${record.toStoreName}</td>
+                        <td>
+                            <span class="status-${statusClass}">
+                                ${record.movedCount}/${record.totalCount}件 (${status})
+                            </span>
+                        </td>
+                        <td>${record.reason || '-'}</td>
+                    </tr>
+                `;
+            });
+
+            historyHTML += `
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="uiManager.hideMoveHistoryDialog()">閉じる</button>
+                                <button type="button" class="btn btn-danger" onclick="uiManager.clearMoveHistory()">履歴をクリア</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', historyHTML);
+
+        } catch (error) {
+            console.error('移動履歴表示エラー:', error);
+            this.showMessage('履歴の表示に失敗しました', 'error');
+        }
+    }
+
+    /**
+     * データ移動履歴ダイアログを閉じる
+     */
+    hideMoveHistoryDialog() {
+        const modal = document.getElementById('move-history-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    /**
+     * データ移動履歴をクリア
+     */
+    clearMoveHistory() {
+        if (confirm('データ移動履歴をすべて削除しますか？')) {
+            localStorage.removeItem('kaikei-data-move-history');
+            this.hideMoveHistoryDialog();
+            this.showMessage('移動履歴をクリアしました', 'success');
+        }
+    }
+
+    /**
+     * カテゴリー表示名取得
+     */
+    getCategoryDisplayName(category) {
+        const categoryNames = {
+            sales: '売上',
+            purchases: '仕入れ',
+            fixedCosts: '固定費',
+            variableCosts: '変動費',
+            laborCosts: '人件費',
+            consumptionTax: '消費税',
+            monthlyPayments: '月々の返済',
+            manufacturerDeposits: 'メーカー保証金'
+        };
+        return categoryNames[category] || category;
     }
 }

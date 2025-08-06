@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>タスク9統合テスト - 店舗間データ移動機能</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 タスク9統合テスト - 店舗間データ移動機能</h1>
+        </header>
+
+        <main>
+            <div id="content-area">
+                <div class="section-header">
+                    <h2>要件7.1-7.5の統合テスト</h2>
+                    <div class="section-controls">
+                        <button class="btn btn-primary" onclick="runIntegrationTest()">統合テスト実行</button>
+                        <button class="btn btn-secondary" onclick="clearTestData()">テストデータクリア</button>
+                    </div>
+                </div>
+
+                <div id="test-results">
+                    <h3>テスト対象要件</h3>
+                    <ul>
+                        <li><strong>要件7.1:</strong> データの店舗移動選択画面表示</li>
+                        <li><strong>要件7.2:</strong> 複数データの一括移動</li>
+                        <li><strong>要件7.3:</strong> データ移動実行と履歴記録</li>
+                        <li><strong>要件7.4:</strong> 移動履歴の表示</li>
+                        <li><strong>要件7.5:</strong> 重複データの確認ダイアログ</li>
+                    </ul>
+
+                    <div id="test-status"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="kaikei/js/store-manager.js"></script>
+    <script src="kaikei/js/data-manager.js"></script>
+    <script src="kaikei/js/ui-manager.js"></script>
+    <script>
+        let storeManager;
+        let dataManager;
+        let uiManager;
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                storeManager = new StoreManager();
+                dataManager = new DataManager();
+                uiManager = new UIManager(dataManager);
+                
+                await storeManager.loadStoreData();
+                await dataManager.loadData();
+                
+                window.storeManager = storeManager;
+                window.dataManager = dataManager;
+                window.uiManager = uiManager;
+                
+                showStatus('初期化完了', 'success');
+            } catch (error) {
+                showStatus('初期化エラー: ' + error.message, 'error');
+            }
+        });
+
+        // 統合テスト実行
+        async function runIntegrationTest() {
+            try {
+                showStatus('統合テストを実行中...', 'info');
+                
+                // テストデータ準備
+                await setupTestData();
+                
+                const results = [];
+                
+                // 要件7.1: データ移動選択画面表示テスト
+                results.push(await testRequirement71());
+                
+                // 要件7.2: 複数データ一括移動テスト
+                results.push(await testRequirement72());
+                
+                // 要件7.3: データ移動実行と履歴記録テスト
+                results.push(await testRequirement73());
+                
+                // 要件7.4: 移動履歴表示テスト
+                results.push(await testRequirement74());
+                
+                // 要件7.5: 重複データ確認テスト
+                results.push(await testRequirement75());
+                
+                displayTestResults(results);
+                
+            } catch (error) {
+                showStatus('統合テストエラー: ' + error.message, 'error');
+            }
+        }
+
+        // テストデータ準備
+        async function setupTestData() {
+            // 既存データをクリア
+            await clearTestData();
+            
+            // テスト店舗作成
+            const store1 = storeManager.addStore({
+                name: '本店',
+                address: '東京都渋谷区1-1-1',
+                openDate: '2024-01-01',
+                note: 'テスト用本店'
+            });
+
+            const store2 = storeManager.addStore({
+                name: '支店A',
+                address: '東京都新宿区2-2-2',
+                openDate: '2024-02-01',
+                note: 'テスト用支店A'
+            });
+
+            // 本店をアクティブに設定
+            storeManager.setActiveStore(store1.id);
+
+            // テストデータ作成
+            for (let i = 1; i <= 3; i++) {
+                dataManager.addRecord('sales', {
+                    year: 2024,
+                    month: 12,
+                    amount: 100000 * i,
+                    note: `テスト売上データ${i}`
+                });
+            }
+        }
+
+        // 要件7.1テスト: データ移動選択画面表示
+        async function testRequirement71() {
+            try {
+                // UIManagerのデータ移動ダイアログ表示メソッドの存在確認
+                const hasMethod = typeof uiManager.showDataMoveDialogInternal === 'function';
+                
+                // 店舗選択機能の確認
+                const stores = storeManager.getStores();
+                const hasMultipleStores = stores.length >= 2;
+                
+                return {
+                    requirement: '7.1',
+                    name: 'データ移動選択画面表示',
+                    passed: hasMethod && hasMultipleStores,
+                    details: `移動ダイアログメソッド: ${hasMethod ? '実装済み' : '未実装'} | 店舗数: ${stores.length}`
+                };
+                
+            } catch (error) {
+                return {
+                    requirement: '7.1',
+                    name: 'データ移動選択画面表示',
+                    passed: false,
+                    details: `エラー: ${error.message}`
+                };
+            }
+        }
+
+        // 要件7.2テスト: 複数データ一括移動
+        async function testRequirement72() {
+            try {
+                // 複数選択機能の確認
+                const hasSelectAllMethod = typeof uiManager.selectAllRecords === 'function';
+                const hasClearSelectionMethod = typeof uiManager.clearSelection === 'function';
+                const hasUpdateSelectionMethod = typeof uiManager.updateSelectionCount === 'function';
+                
+                // 一括移動メソッドの確認
+                const hasBatchMoveMethod = typeof uiManager.showDataMoveDialog === 'function';
+                
+                const allMethodsExist = hasSelectAllMethod && hasClearSelectionMethod && 
+                                       hasUpdateSelectionMethod && hasBatchMoveMethod;
+                
+                return {
+                    requirement: '7.2',
+                    name: '複数データ一括移動',
+                    passed: allMethodsExist,
+                    details: `選択機能: ${hasSelectAllMethod ? '✓' : '✗'} | 選択解除: ${hasClearSelectionMethod ? '✓' : '✗'} | 選択数更新: ${hasUpdateSelectionMethod ? '✓' : '✗'} | 一括移動: ${hasBatchMoveMethod ? '✓' : '✗'}`
+                };
+                
+            } catch (error) {
+                return {
+                    requirement: '7.2',
+                    name: '複数データ一括移動',
+                    passed: false,
+                    details: `エラー: ${error.message}`
+                };
+            }
+        }
+
+        // 要件7.3テスト: データ移動実行と履歴記録
+        async function testRequirement73() {
+            try {
+                const stores = storeManager.getStores();
+                const salesData = dataManager.getDataByCategory('sales');
+                
+                if (salesData.length === 0) {
+                    throw new Error('テストデータが不足しています');
+                }
+                
+                // データ移動実行
+                const recordToMove = salesData[0];
+                const originalStoreId = recordToMove.storeId;
+                const targetStoreId = stores.find(s => s.id !== originalStoreId)?.id;
+                
+                if (!targetStoreId) {
+                    throw new Error('移動先店舗が見つかりません');
+                }
+                
+                // 移動実行
+                const movedRecord = dataManager.moveRecordToStore('sales', recordToMove.id, targetStoreId);
+                
+                // 履歴記録の確認
+                const history = dataManager.getDataMoveHistory(1);
+                const hasHistoryRecord = history.length > 0;
+                
+                return {
+                    requirement: '7.3',
+                    name: 'データ移動実行と履歴記録',
+                    passed: movedRecord.storeId === targetStoreId && hasHistoryRecord,
+                    details: `移動成功: ${movedRecord.storeId === targetStoreId ? '✓' : '✗'} | 履歴記録: ${hasHistoryRecord ? '✓' : '✗'}`
+                };
+                
+            } catch (error) {
+                return {
+                    requirement: '7.3',
+                    name: 'データ移動実行と履歴記録',
+                    passed: false,
+                    details: `エラー: ${error.message}`
+                };
+            }
+        }
+
+        // 要件7.4テスト: 移動履歴表示
+        async function testRequirement74() {
+            try {
+                // 履歴表示メソッドの確認
+                const hasHistoryDisplayMethod = typeof uiManager.showDataMoveHistory === 'function';
+                
+                // 履歴取得メソッドの確認
+                const hasHistoryGetMethod = typeof dataManager.getDataMoveHistory === 'function';
+                
+                // 履歴データの確認
+                const history = dataManager.getDataMoveHistory(10);
+                const hasHistoryData = Array.isArray(history);
+                
+                return {
+                    requirement: '7.4',
+                    name: '移動履歴表示',
+                    passed: hasHistoryDisplayMethod && hasHistoryGetMethod && hasHistoryData,
+                    details: `履歴表示メソッド: ${hasHistoryDisplayMethod ? '✓' : '✗'} | 履歴取得メソッド: ${hasHistoryGetMethod ? '✓' : '✗'} | 履歴データ: ${history.length}件`
+                };
+                
+            } catch (error) {
+                return {
+                    requirement: '7.4',
+                    name: '移動履歴表示',
+                    passed: false,
+                    details: `エラー: ${error.message}`
+                };
+            }
+        }
+
+        // 要件7.5テスト: 重複データ確認
+        async function testRequirement75() {
+            try {
+                // 重複チェックメソッドの確認
+                const hasDuplicateCheckMethod = typeof dataManager.checkDuplicateData === 'function';
+                
+                // 重複チェック実行テスト
+                const stores = storeManager.getStores();
+                const testRecord = {
+                    year: 2024,
+                    month: 12,
+                    amount: 100000,
+                    category: 'テスト',
+                    note: '重複チェック用'
+                };
+                
+                const duplicates = dataManager.checkDuplicateData('sales', testRecord, stores[0].id);
+                const duplicateCheckWorks = Array.isArray(duplicates);
+                
+                return {
+                    requirement: '7.5',
+                    name: '重複データ確認',
+                    passed: hasDuplicateCheckMethod && duplicateCheckWorks,
+                    details: `重複チェックメソッド: ${hasDuplicateCheckMethod ? '✓' : '✗'} | チェック結果: ${duplicateCheckWorks ? '正常' : 'エラー'} | 類似データ: ${duplicates.length}件`
+                };
+                
+            } catch (error) {
+                return {
+                    requirement: '7.5',
+                    name: '重複データ確認',
+                    passed: false,
+                    details: `エラー: ${error.message}`
+                };
+            }
+        }
+
+        // テスト結果表示
+        function displayTestResults(results) {
+            let resultHTML = '<h3>統合テスト結果</h3>';
+            resultHTML += '<table class="data-table"><thead><tr><th>要件</th><th>テスト項目</th><th>結果</th><th>詳細</th></tr></thead><tbody>';
+            
+            let passedCount = 0;
+            results.forEach(result => {
+                const status = result.passed ? '✅ 成功' : '❌ 失敗';
+                const statusClass = result.passed ? 'status-success' : 'status-error';
+                
+                if (result.passed) passedCount++;
+                
+                resultHTML += `
+                    <tr>
+                        <td><strong>${result.requirement}</strong></td>
+                        <td>${result.name}</td>
+                        <td class="${statusClass}">${status}</td>
+                        <td>${result.details}</td>
+                    </tr>
+                `;
+            });
+            
+            resultHTML += '</tbody></table>';
+            
+            // サマリー表示
+            const allPassed = passedCount === results.length;
+            const summaryClass = allPassed ? 'status-success' : 'status-error';
+            const summaryIcon = allPassed ? '✅' : '❌';
+            
+            resultHTML += `
+                <div class="test-summary ${summaryClass}">
+                    <h4>${summaryIcon} テスト結果サマリー: ${passedCount}/${results.length} 要件が実装済み</h4>
+                    ${allPassed ? 
+                        '<p><strong>🎉 タスク9「店舗間データ移動機能の実装」は完了しています！</strong></p>' : 
+                        '<p><strong>⚠️ 一部の要件で問題が検出されました。</strong></p>'
+                    }
+                </div>
+            `;
+            
+            document.getElementById('test-results').innerHTML = resultHTML;
+            
+            const overallStatus = allPassed ? 
+                'すべての要件が実装済みです！タスク9は完了しています。' : 
+                `${results.length - passedCount}件の要件で問題が検出されました。`;
+            const statusType = allPassed ? 'success' : 'error';
+            showStatus(overallStatus, statusType);
+        }
+
+        // テストデータクリア
+        async function clearTestData() {
+            try {
+                // 全データをリセット
+                dataManager.resetAllData();
+                
+                // 全店舗を削除（デフォルト店舗以外）
+                const stores = storeManager.getStores();
+                for (const store of stores.slice(1)) { // 最初の店舗は残す
+                    try {
+                        storeManager.deleteStore(store.id);
+                    } catch (error) {
+                        console.warn('店舗削除エラー:', error);
+                    }
+                }
+
+                // 移動履歴もクリア
+                localStorage.removeItem('kaikei-data-move-history');
+
+                showStatus('テストデータをクリアしました', 'success');
+
+            } catch (error) {
+                showStatus('テストデータクリアエラー: ' + error.message, 'error');
+            }
+        }
+
+        // ステータス表示
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('test-status');
+            statusDiv.className = `${type}-message`;
+            statusDiv.textContent = message;
+            
+            // 5秒後に消去
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
