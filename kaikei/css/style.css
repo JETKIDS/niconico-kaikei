@@ -74,6 +74,8 @@ header h1 {
     padding: 0.5rem 1rem;
     border-radius: 5px;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    white-space: nowrap;
+    min-width: fit-content;
 }
 
 .global-store-selector label,
@@ -92,7 +94,11 @@ header h1 {
     border-radius: 3px;
     padding: 0.3rem 0.5rem;
     font-size: 0.9rem;
-    min-width: 80px;
+    min-width: 100px;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* ナビゲーション */
@@ -124,6 +130,9 @@ header h1 {
     border: 2px outset #9a8a7a;
     /* 浮き出し効果 */
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+    text-align: center;
+    min-width: 120px;
 }
 
 .nav-link:hover,
@@ -630,6 +639,31 @@ main {
         font-size: 0.9rem;
     }
 
+    /* 店舗管理テーブルのモバイル対応 */
+    .data-table.store-table {
+        font-size: 0.8rem;
+    }
+
+    .data-table.store-table th:nth-child(1) { width: 25%; } /* 店舗名 */
+    .data-table.store-table th:nth-child(2) { width: 20%; } /* 住所 */
+    .data-table.store-table th:nth-child(3) { width: 15%; } /* 開店日 */
+    .data-table.store-table th:nth-child(4) { width: 15%; } /* 備考 */
+    .data-table.store-table th:nth-child(5) { width: 10%; } /* 状態 */
+    .data-table.store-table th:nth-child(6) { width: 15%; } /* 操作 */
+
+    .store-action-btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.7rem;
+        margin: 0.05rem;
+    }
+
+    .status-active,
+    .status-inactive {
+        padding: 0.2rem 0.6rem;
+        font-size: 0.8rem;
+        min-width: 60px;
+    }
+
     .section-header {
         flex-direction: column;
         align-items: stretch;
@@ -773,6 +807,29 @@ main {
     .data-table th,
     .data-table td {
         padding: 0.5rem;
+    }
+
+    /* 店舗管理テーブルの超小画面対応 */
+    .data-table.store-table {
+        font-size: 0.7rem;
+    }
+
+    .data-table.store-table th,
+    .data-table.store-table td {
+        padding: 0.3rem;
+    }
+
+    .store-action-btn {
+        padding: 0.15rem 0.3rem;
+        font-size: 0.65rem;
+        margin: 0.02rem;
+    }
+
+    .status-active,
+    .status-inactive {
+        padding: 0.15rem 0.4rem;
+        font-size: 0.7rem;
+        min-width: 50px;
     }
 
     /* ボタンの小画面対応 */
