@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マニュアルボタン機能テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .test-button {
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #a03030;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background-color: #8a2828;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>マニュアルボタン機能テスト</h1>
+    
+    <div class="test-section">
+        <h2>1. 基本機能テスト</h2>
+        <p>マニュアルボタンの基本的な動作をテストします。</p>
+        
+        <!-- マニュアルボタン（実際のもの） -->
+        <button 
+            class="manual-button" 
+            id="manual-button"
+            type="button"
+            aria-label="操作マニュアルを新しいタブで開く"
+            title="操作マニュアルを開く"
+            tabindex="0">
+            <span class="manual-button-icon" aria-hidden="true">📖</span>
+            <span class="manual-button-text">マニュアル</span>
+        </button>
+        
+        <div id="test-status-1" class="status info">
+            テスト準備中...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. エラーハンドリングテスト</h2>
+        <p>ファイルが存在しない場合のエラーハンドリングをテストします。</p>
+        
+        <button class="test-button" onclick="testFileNotFound()">
+            存在しないファイルをテスト
+        </button>
+        
+        <div id="test-status-2" class="status info">
+            テスト待機中...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. ポップアップブロッカーテスト</h2>
+        <p>ポップアップブロッカー対応機能をテストします。</p>
+        
+        <button class="test-button" onclick="testPopupBlocked()">
+            ポップアップブロックをシミュレート
+        </button>
+        
+        <div id="test-status-3" class="status info">
+            テスト待機中...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. アクセシビリティテスト</h2>
+        <p>キーボードナビゲーションとアクセシビリティ機能をテストします。</p>
+        
+        <button class="test-button" onclick="testAccessibility()">
+            アクセシビリティテスト実行
+        </button>
+        
+        <div id="test-status-4" class="status info">
+            テスト待機中...
+        </div>
+    </div>
+
+    <!-- 簡易トーストマネージャー -->
+    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000;"></div>
+
+    <script>
+        // 簡易トーストマネージャー
+        class SimpleToastManager {
+            constructor() {
+                this.container = document.getElementById('toast-container');
+            }
+            
+            show(message, type = 'info', duration = 5000) {
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    background: ${type === 'error' ? '#f8d7da' : type === 'success' ? '#d4edda' : '#d1ecf1'};
+                    color: ${type === 'error' ? '#721c24' : type === 'success' ? '#155724' : '#0c5460'};
+                    padding: 12px 16px;
+                    margin-bottom: 8px;
+                    border-radius: 4px;
+                    border: 1px solid ${type === 'error' ? '#f5c6cb' : type === 'success' ? '#c3e6cb' : '#bee5eb'};
+                    max-width: 300px;
+                    word-wrap: break-word;
+                `;
+                toast.textContent = message;
+                
+                this.container.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, duration);
+            }
+        }
+
+        // グローバル変数として設定
+        window.toastManager = new SimpleToastManager();
+
+        // ManualButtonManagerクラス（簡略版）
+        class ManualButtonManager {
+            constructor() {
+                this.button = null;
+                this.manualUrl = 'kaikei/manual.html';
+                this.isInitialized = false;
+                this.errorMessages = {
+                    fileNotFound: 'マニュアルファイルが見つかりません。管理者にお問い合わせください。',
+                    popupBlocked: 'ポップアップがブロックされました。ブラウザの設定を確認してください。',
+                    generalError: 'マニュアルを開く際にエラーが発生しました。'
+                };
+            }
+
+            init() {
+                try {
+                    this.button = document.getElementById('manual-button');
+                    if (!this.button) {
+                        console.error('マニュアルボタンが見つかりません');
+                        return false;
+                    }
+
+                    this.button.addEventListener('click', (e) => this.handleClick(e));
+                    this.button.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+                    this.isInitialized = true;
+                    console.log('✓ ManualButtonManager initialized');
+                    
+                    // テスト状態更新
+                    const status = document.getElementById('test-status-1');
+                    if (status) {
+                        status.className = 'status success';
+                        status.textContent = '✓ ManualButtonManager が正常に初期化されました';
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    console.error('ManualButtonManager初期化エラー:', error);
+                    
+                    const status = document.getElementById('test-status-1');
+                    if (status) {
+                        status.className = 'status error';
+                        status.textContent = '✗ 初期化エラー: ' + error.message;
+                    }
+                    
+                    return false;
+                }
+            }
+
+            async handleClick(event) {
+                event.preventDefault();
+                
+                try {
+                    this.setButtonState(false, '確認中...');
+                    
+                    const fileExists = await this.validateManualFile();
+                    if (!fileExists) {
+                        this.showFileNotFoundError();
+                        return;
+                    }
+
+                    await this.openManual();
+                    
+                } catch (error) {
+                    console.error('マニュアルボタンクリックエラー:', error);
+                    this.showError(this.errorMessages.generalError);
+                } finally {
+                    this.setButtonState(true, 'マニュアル');
+                }
+            }
+
+            handleKeydown(event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    this.handleClick(event);
+                }
+            }
+
+            async validateManualFile() {
+                try {
+                    const response = await fetch(this.manualUrl, { 
+                        method: 'HEAD',
+                        cache: 'no-cache'
+                    });
+                    return response.ok;
+                } catch (error) {
+                    console.warn('ファイル存在確認エラー:', error);
+                    return true;
+                }
+            }
+
+            async openManual() {
+                try {
+                    const newWindow = window.open(this.manualUrl, '_blank', 'noopener,noreferrer');
+                    
+                    if (this.isPopupBlocked(newWindow)) {
+                        this.handlePopupBlocked();
+                        return;
+                    }
+
+                    this.showSuccess('マニュアルを新しいタブで開きました');
+                    
+                } catch (error) {
+                    console.error('マニュアルオープンエラー:', error);
+                    this.handlePopupBlocked();
+                }
+            }
+
+            isPopupBlocked(newWindow) {
+                return !newWindow || newWindow.closed || typeof newWindow.closed === 'undefined';
+            }
+
+            handlePopupBlocked() {
+                console.warn('ポップアップがブロックされました');
+                this.showError(this.errorMessages.popupBlocked);
+            }
+
+            setButtonState(enabled, text) {
+                if (!this.button) return;
+                
+                this.button.disabled = !enabled;
+                const textElement = this.button.querySelector('.manual-button-text');
+                if (textElement) {
+                    textElement.textContent = text;
+                }
+                
+                if (enabled) {
+                    this.button.classList.remove('loading');
+                } else {
+                    this.button.classList.add('loading');
+                }
+            }
+
+            showError(message) {
+                if (window.toastManager) {
+                    window.toastManager.show(message, 'error', 8000);
+                } else {
+                    alert(`エラー: ${message}`);
+                }
+            }
+
+            showSuccess(message) {
+                if (window.toastManager) {
+                    window.toastManager.show(message, 'success', 3000);
+                }
+            }
+
+            showFileNotFoundError() {
+                this.showError('マニュアルファイルが見つかりません');
+            }
+
+            // テスト用メソッド
+            testFileNotFound() {
+                this.manualUrl = 'nonexistent-file.html';
+                this.handleClick(new Event('click'));
+                
+                setTimeout(() => {
+                    this.manualUrl = 'kaikei/manual.html';
+                }, 2000);
+            }
+
+            testPopupBlocked() {
+                // window.openをモック
+                const originalOpen = window.open;
+                window.open = () => null;
+                
+                this.handleClick(new Event('click'));
+                
+                // 元に戻す
+                setTimeout(() => {
+                    window.open = originalOpen;
+                }, 2000);
+            }
+        }
+
+        // テスト関数
+        function testFileNotFound() {
+            const status = document.getElementById('test-status-2');
+            status.className = 'status info';
+            status.textContent = 'ファイル存在確認テスト実行中...';
+            
+            if (window.manualButtonManager) {
+                window.manualButtonManager.testFileNotFound();
+                
+                setTimeout(() => {
+                    status.className = 'status success';
+                    status.textContent = '✓ ファイル存在確認エラーハンドリングをテストしました';
+                }, 3000);
+            } else {
+                status.className = 'status error';
+                status.textContent = '✗ ManualButtonManager が初期化されていません';
+            }
+        }
+
+        function testPopupBlocked() {
+            const status = document.getElementById('test-status-3');
+            status.className = 'status info';
+            status.textContent = 'ポップアップブロックテスト実行中...';
+            
+            if (window.manualButtonManager) {
+                window.manualButtonManager.testPopupBlocked();
+                
+                setTimeout(() => {
+                    status.className = 'status success';
+                    status.textContent = '✓ ポップアップブロック対応をテストしました';
+                }, 3000);
+            } else {
+                status.className = 'status error';
+                status.textContent = '✗ ManualButtonManager が初期化されていません';
+            }
+        }
+
+        function testAccessibility() {
+            const status = document.getElementById('test-status-4');
+            const button = document.getElementById('manual-button');
+            
+            if (!button) {
+                status.className = 'status error';
+                status.textContent = '✗ マニュアルボタンが見つかりません';
+                return;
+            }
+            
+            status.className = 'status info';
+            status.textContent = 'アクセシビリティテスト実行中...';
+            
+            // フォーカステスト
+            button.focus();
+            
+            // ARIA属性チェック
+            const hasAriaLabel = button.hasAttribute('aria-label');
+            const hasTitle = button.hasAttribute('title');
+            const hasTabIndex = button.hasAttribute('tabindex');
+            
+            let results = [];
+            if (hasAriaLabel) results.push('✓ aria-label');
+            if (hasTitle) results.push('✓ title');
+            if (hasTabIndex) results.push('✓ tabindex');
+            
+            setTimeout(() => {
+                status.className = 'status success';
+                status.textContent = `✓ アクセシビリティテスト完了: ${results.join(', ')}`;
+            }, 1000);
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            window.manualButtonManager = new ManualButtonManager();
+            window.manualButtonManager.init();
+        });
+    </script>
+</body>
+</html>

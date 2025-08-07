@@ -468,6 +468,650 @@ class PerformanceMonitor {
 }
 
 /**
+ * マニュアルボタン管理クラス
+ * マニュアルボタンの機能とエラーハンドリングを担当
+ */
+class ManualButtonManager {
+    constructor() {
+        this.button = null;
+        this.manualUrl = 'manual.html';
+        this.isInitialized = false;
+        this.errorMessages = {
+            fileNotFound: 'マニュアルファイルが見つかりません。管理者にお問い合わせください。',
+            popupBlocked: 'ポップアップがブロックされました。ブラウザの設定を確認してください。',
+            generalError: 'マニュアルを開く際にエラーが発生しました。'
+        };
+    }
+
+    /**
+     * 初期化
+     */
+    init() {
+        try {
+            // ブラウザ互換性チェック
+            if (!this.checkBrowserCompatibility()) {
+                console.warn('ブラウザ互換性の問題が検出されました - 基本機能のみ利用可能');
+            }
+
+            this.button = document.getElementById('manual-button');
+            if (!this.button) {
+                console.error('マニュアルボタンが見つかりません');
+                return false;
+            }
+
+            // 既存のクリックイベントを削除（JavaScriptが有効な場合のみ）
+            this.button.removeAttribute('onclick');
+            
+            // 新しいイベントリスナーを追加
+            this.button.addEventListener('click', (e) => this.handleClick(e));
+            this.button.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+            this.isInitialized = true;
+            console.log('✓ ManualButtonManager initialized with browser compatibility checks');
+            return true;
+        } catch (error) {
+            console.error('ManualButtonManager初期化エラー:', error);
+            
+            // エラー時はフォールバック機能を有効化
+            this.enableFallbackMode();
+            return false;
+        }
+    }
+
+    /**
+     * ブラウザ互換性チェック
+     */
+    checkBrowserCompatibility() {
+        const compatibility = {
+            fetch: typeof fetch !== 'undefined',
+            promise: typeof Promise !== 'undefined',
+            addEventListener: typeof document.addEventListener !== 'undefined',
+            querySelector: typeof document.querySelector !== 'undefined',
+            windowOpen: typeof window.open !== 'undefined',
+            localStorage: this.checkLocalStorageSupport(),
+            cssSupports: typeof CSS !== 'undefined' && typeof CSS.supports !== 'undefined'
+        };
+
+        const issues = [];
+        
+        // 必須機能のチェック
+        if (!compatibility.addEventListener) {
+            issues.push('addEventListener not supported - using fallback event handling');
+        }
+        
+        if (!compatibility.windowOpen) {
+            issues.push('window.open not supported - manual navigation required');
+        }
+        
+        if (!compatibility.fetch) {
+            issues.push('fetch API not supported - file validation disabled');
+        }
+        
+        if (!compatibility.promise) {
+            issues.push('Promise not supported - async operations may fail');
+        }
+
+        // 警告の表示
+        if (issues.length > 0) {
+            console.group('Browser Compatibility Issues:');
+            issues.forEach(issue => console.warn(issue));
+            console.groupEnd();
+            
+            // 互換性情報をユーザーに通知
+            if (window.toastManager) {
+                window.toastManager.show(
+                    'ブラウザの一部機能が制限されています。最新のブラウザの使用を推奨します。',
+                    'warning',
+                    8000,
+                    'ブラウザ互換性'
+                );
+            }
+        }
+
+        // ブラウザ情報をログ出力
+        this.logBrowserInfo();
+
+        return issues.length === 0;
+    }
+
+    /**
+     * LocalStorage対応チェック
+     */
+    checkLocalStorageSupport() {
+        try {
+            const testKey = '__localStorage_test__';
+            localStorage.setItem(testKey, 'test');
+            localStorage.removeItem(testKey);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * ブラウザ情報のログ出力
+     */
+    logBrowserInfo() {
+        const userAgent = navigator.userAgent;
+        const browserInfo = {
+            userAgent: userAgent,
+            language: navigator.language,
+            platform: navigator.platform,
+            cookieEnabled: navigator.cookieEnabled,
+            onLine: navigator.onLine
+        };
+
+        // 主要ブラウザの検出
+        let browserName = 'Unknown';
+        if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
+            browserName = 'Chrome';
+        } else if (userAgent.includes('Firefox')) {
+            browserName = 'Firefox';
+        } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+            browserName = 'Safari';
+        } else if (userAgent.includes('Edg')) {
+            browserName = 'Edge';
+        } else if (userAgent.includes('MSIE') || userAgent.includes('Trident')) {
+            browserName = 'Internet Explorer';
+        }
+
+        console.log(`Browser detected: ${browserName}`);
+        console.log('Browser info:', browserInfo);
+
+        // 古いブラウザの警告
+        if (browserName === 'Internet Explorer') {
+            console.warn('Internet Explorer is not fully supported. Please use a modern browser.');
+            if (window.toastManager) {
+                window.toastManager.show(
+                    'Internet Explorerは完全にサポートされていません。モダンブラウザの使用を強く推奨します。',
+                    'error',
+                    15000,
+                    'ブラウザサポート'
+                );
+            }
+        }
+    }
+
+    /**
+     * フォールバックモード有効化
+     */
+    enableFallbackMode() {
+        console.log('Enabling fallback mode for manual button');
+        
+        // 基本的なクリックハンドラーを設定
+        if (this.button) {
+            this.button.onclick = () => {
+                try {
+                    window.open(this.manualUrl, '_blank', 'noopener,noreferrer');
+                } catch (error) {
+                    console.error('Fallback manual open failed:', error);
+                    alert('マニュアルを開けませんでした。URLを直接入力してください: ' + this.manualUrl);
+                }
+            };
+        }
+    }
+
+    /**
+     * クリックイベントハンドラー
+     */
+    async handleClick(event) {
+        event.preventDefault();
+        
+        try {
+            // ボタンを一時的に無効化
+            this.setButtonState(false, '確認中...');
+            
+            // ファイル存在確認
+            const fileExists = await this.validateManualFile();
+            if (!fileExists) {
+                this.showFileNotFoundError();
+                return;
+            }
+
+            // マニュアルを開く
+            await this.openManual();
+            
+        } catch (error) {
+            console.error('マニュアルボタンクリックエラー:', error);
+            this.showError(this.errorMessages.generalError);
+        } finally {
+            // ボタンを再有効化
+            this.setButtonState(true, 'マニュアル');
+        }
+    }
+
+    /**
+     * キーボードイベントハンドラー
+     */
+    handleKeydown(event) {
+        // Enter または Space キーでクリックイベントを発火
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            this.handleClick(event);
+        }
+    }
+
+    /**
+     * マニュアルファイルの存在確認
+     */
+    async validateManualFile() {
+        try {
+            // まずHEADリクエストで確認
+            const response = await fetch(this.manualUrl, { 
+                method: 'HEAD',
+                cache: 'no-cache',
+                timeout: 5000
+            });
+            
+            if (response.ok) {
+                console.log('✓ マニュアルファイルの存在を確認しました');
+                return true;
+            } else if (response.status === 404) {
+                console.error('✗ マニュアルファイルが見つかりません (404)');
+                return false;
+            } else {
+                console.warn(`マニュアルファイル確認で予期しないレスポンス: ${response.status}`);
+                // 404以外のエラーの場合は存在すると仮定
+                return true;
+            }
+        } catch (error) {
+            console.warn('ファイル存在確認エラー:', error);
+            
+            // ネットワークエラーの場合は、より詳細な確認を試行
+            return await this.fallbackFileCheck();
+        }
+    }
+
+    /**
+     * フォールバック用ファイル確認
+     */
+    async fallbackFileCheck() {
+        try {
+            // GETリクエストで再試行（より確実だが重い）
+            const response = await fetch(this.manualUrl, {
+                method: 'GET',
+                cache: 'no-cache',
+                timeout: 3000
+            });
+            
+            if (response.ok) {
+                console.log('✓ フォールバック確認でマニュアルファイルを確認しました');
+                return true;
+            } else if (response.status === 404) {
+                console.error('✗ フォールバック確認でもマニュアルファイルが見つかりません');
+                return false;
+            } else {
+                console.warn('フォールバック確認で予期しないレスポンス:', response.status);
+                return true;
+            }
+        } catch (error) {
+            console.warn('フォールバック確認もエラー:', error);
+            // 最終的にはファイルが存在すると仮定（オフライン環境等を考慮）
+            return true;
+        }
+    }
+
+    /**
+     * ファイル存在確認結果に基づくエラーメッセージ表示
+     */
+    showFileNotFoundError() {
+        const detailedMessage = `
+            マニュアルファイル (${this.manualUrl}) が見つかりません。
+            
+            考えられる原因:
+            • ファイルが削除または移動された
+            • ファイル名が変更された
+            • サーバーの問題
+            
+            対処法:
+            • ページを再読み込みしてください
+            • 管理者にお問い合わせください
+        `;
+
+        if (window.toastManager) {
+            window.toastManager.show(
+                'マニュアルファイルが見つかりません',
+                'error',
+                10000,
+                'ファイルエラー'
+            );
+        }
+
+        // 詳細なエラーダイアログも表示
+        if (window.uiManager && typeof window.uiManager.showEnhancedErrorMessage === 'function') {
+            window.uiManager.showEnhancedErrorMessage(
+                'マニュアルファイルエラー',
+                detailedMessage.trim(),
+                {
+                    type: 'error',
+                    showRetry: true,
+                    retryAction: () => this.handleClick(new Event('click')),
+                    showDetails: true,
+                    details: `ファイルパス: ${this.manualUrl}\n確認時刻: ${new Date().toLocaleString()}`
+                }
+            );
+        } else {
+            alert(detailedMessage.trim());
+        }
+    }
+
+    /**
+     * マニュアルを開く
+     */
+    async openManual() {
+        try {
+            const newWindow = window.open(this.manualUrl, '_blank', 'noopener,noreferrer');
+            
+            // より確実なポップアップブロック検出
+            if (this.isPopupBlocked(newWindow)) {
+                this.handlePopupBlocked();
+                return;
+            }
+
+            // 成功時のフィードバック
+            this.showSuccess('マニュアルを新しいタブで開きました');
+            
+        } catch (error) {
+            console.error('マニュアルオープンエラー:', error);
+            this.handlePopupBlocked();
+        }
+    }
+
+    /**
+     * ポップアップブロック検出
+     */
+    isPopupBlocked(newWindow) {
+        // 基本的な検出
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+            return true;
+        }
+        
+        // より詳細な検出（一部のブラウザ用）
+        try {
+            // 少し待ってから再度チェック
+            setTimeout(() => {
+                if (newWindow.closed) {
+                    console.warn('ポップアップが即座に閉じられました（ブロックされた可能性）');
+                    this.handlePopupBlocked();
+                }
+            }, 100);
+            
+            // ウィンドウのプロパティにアクセスできるかチェック
+            if (newWindow.location === undefined) {
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.warn('ポップアップ検出エラー:', error);
+            return true;
+        }
+    }
+
+    /**
+     * ポップアップブロック時の処理
+     */
+    handlePopupBlocked() {
+        console.warn('ポップアップがブロックされました');
+        
+        // 詳細なポップアップブロック対応ダイアログを表示
+        this.showPopupBlockedDialog();
+    }
+
+    /**
+     * ポップアップブロック対応ダイアログ
+     */
+    showPopupBlockedDialog() {
+        const dialogHTML = `
+            <div class="modal-overlay" id="popup-blocked-modal">
+                <div class="modal-content popup-blocked-dialog">
+                    <div class="modal-header">
+                        <h3>🚫 ポップアップがブロックされました</h3>
+                        <button class="close-btn" onclick="manualButtonManager.hidePopupBlockedDialog()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="error-message">ブラウザの設定によりマニュアルを新しいタブで開けませんでした。</p>
+                        
+                        <div class="popup-solutions">
+                            <h4>💡 解決方法:</h4>
+                            <div class="solution-options">
+                                <div class="solution-option">
+                                    <h5>方法1: 直接リンクを使用</h5>
+                                    <p>下のボタンをクリックしてマニュアルを開いてください</p>
+                                    <button class="btn btn-primary" onclick="manualButtonManager.createDirectLink()">
+                                        📖 マニュアルを開く
+                                    </button>
+                                </div>
+                                
+                                <div class="solution-option">
+                                    <h5>方法2: 同じタブで開く</h5>
+                                    <p>現在のページからマニュアルに移動します（戻るボタンで戻れます）</p>
+                                    <button class="btn btn-secondary" onclick="manualButtonManager.openInSameTab()">
+                                        🔄 同じタブで開く
+                                    </button>
+                                </div>
+                                
+                                <div class="solution-option">
+                                    <h5>方法3: ポップアップを許可</h5>
+                                    <p>ブラウザのアドレスバー付近のポップアップブロックアイコンをクリックして許可してください</p>
+                                    <div class="browser-instructions">
+                                        <strong>Chrome/Edge:</strong> アドレスバー右端の🚫アイコン → 「許可」<br>
+                                        <strong>Firefox:</strong> アドレスバー左端の🛡️アイコン → 「ポップアップを許可」<br>
+                                        <strong>Safari:</strong> 「Safari」メニュー → 「設定」→ 「Webサイト」→ 「ポップアップウィンドウ」
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="popup-prevention">
+                            <h4>🔧 今後の対策:</h4>
+                            <p>このサイトのポップアップを常に許可するには、ブラウザの設定で当サイトを信頼済みサイトに追加してください。</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" onclick="manualButtonManager.createDirectLink()">
+                            マニュアルを開く
+                        </button>
+                        <button class="btn btn-secondary" onclick="manualButtonManager.hidePopupBlockedDialog()">
+                            閉じる
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+        
+        // アクセシビリティ対応
+        const modal = document.getElementById('popup-blocked-modal');
+        if (modal) {
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-labelledby', 'popup-blocked-title');
+            modal.setAttribute('aria-modal', 'true');
+            
+            // 最初のボタンにフォーカス
+            const firstButton = modal.querySelector('.btn');
+            if (firstButton) {
+                firstButton.focus();
+            }
+        }
+    }
+
+    /**
+     * ポップアップブロックダイアログを閉じる
+     */
+    hidePopupBlockedDialog() {
+        const modal = document.getElementById('popup-blocked-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    /**
+     * 同じタブでマニュアルを開く
+     */
+    openInSameTab() {
+        if (confirm('現在のページからマニュアルページに移動します。よろしいですか？\n（ブラウザの戻るボタンで戻ることができます）')) {
+            try {
+                window.location.href = this.manualUrl;
+            } catch (error) {
+                console.error('同じタブでのマニュアルオープンエラー:', error);
+                this.showError('マニュアルページに移動できませんでした。');
+            }
+        }
+    }
+
+    /**
+     * 直接リンクを作成
+     */
+    createDirectLink() {
+        // ダイアログを閉じる
+        this.hidePopupBlockedDialog();
+        
+        // 直接リンクを作成
+        const link = document.createElement('a');
+        link.href = this.manualUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = '📖 マニュアルを開く (クリックしてください)';
+        link.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10001;
+            background: #a03030;
+            color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            border: 2px solid #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        `;
+        
+        // ホバー効果
+        link.addEventListener('mouseenter', () => {
+            link.style.background = '#8a2828';
+            link.style.transform = 'translate(-50%, -50%) scale(1.05)';
+        });
+        
+        link.addEventListener('mouseleave', () => {
+            link.style.background = '#a03030';
+            link.style.transform = 'translate(-50%, -50%) scale(1)';
+        });
+        
+        document.body.appendChild(link);
+        
+        // 成功メッセージ
+        this.showSuccess('直接リンクを作成しました。クリックしてマニュアルを開いてください。');
+        
+        // 10秒後に自動削除
+        const autoRemoveTimeout = setTimeout(() => {
+            if (link.parentNode) {
+                link.parentNode.removeChild(link);
+            }
+        }, 10000);
+        
+        // クリック時の処理
+        link.addEventListener('click', (e) => {
+            // タイムアウトをクリア
+            clearTimeout(autoRemoveTimeout);
+            
+            // 少し遅延してリンクを削除
+            setTimeout(() => {
+                if (link.parentNode) {
+                    link.parentNode.removeChild(link);
+                }
+            }, 500);
+            
+            // 成功メッセージ
+            this.showSuccess('マニュアルを開いています...');
+        });
+        
+        // ESCキーで閉じる
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                clearTimeout(autoRemoveTimeout);
+                if (link.parentNode) {
+                    link.parentNode.removeChild(link);
+                }
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+        
+        // フォーカスを当てる
+        link.focus();
+    }
+
+    /**
+     * ボタンの状態設定
+     */
+    setButtonState(enabled, text) {
+        if (!this.button) return;
+        
+        this.button.disabled = !enabled;
+        const textElement = this.button.querySelector('.manual-button-text');
+        if (textElement) {
+            textElement.textContent = text;
+        }
+        
+        if (enabled) {
+            this.button.classList.remove('loading');
+        } else {
+            this.button.classList.add('loading');
+        }
+    }
+
+    /**
+     * エラーメッセージ表示
+     */
+    showError(message) {
+        if (window.toastManager) {
+            window.toastManager.show(message, 'error', 8000, 'マニュアルエラー');
+        } else {
+            alert(`エラー: ${message}`);
+        }
+    }
+
+    /**
+     * 成功メッセージ表示
+     */
+    showSuccess(message) {
+        if (window.toastManager) {
+            window.toastManager.show(message, 'success', 3000, 'マニュアル');
+        }
+    }
+
+    /**
+     * 手動でマニュアルを開く（フォールバック用）
+     */
+    forceOpenManual() {
+        try {
+            window.location.href = this.manualUrl;
+        } catch (error) {
+            console.error('強制マニュアルオープンエラー:', error);
+            this.showError('マニュアルを開けませんでした。URLを直接入力してください: ' + this.manualUrl);
+        }
+    }
+
+    /**
+     * 破棄処理
+     */
+    destroy() {
+        if (this.button) {
+            this.button.removeEventListener('click', this.handleClick);
+            this.button.removeEventListener('keydown', this.handleKeydown);
+        }
+        this.isInitialized = false;
+    }
+}
+
+/**
  * UI管理クラス
  * ユーザーインターフェースの制御と表示を担当
  */
@@ -480,12 +1124,14 @@ class UIManager {
         this.loadingManager = new LoadingManager();
         this.toastManager = new ToastManager();
         this.performanceMonitor = new PerformanceMonitor();
+        this.manualButtonManager = new ManualButtonManager();
         this.setupErrorHandling();
         
         // グローバル変数として設定
         window.loadingManager = this.loadingManager;
         window.toastManager = this.toastManager;
         window.performanceMonitor = this.performanceMonitor;
+        window.manualButtonManager = this.manualButtonManager;
     }
 
     /**
@@ -494,7 +1140,92 @@ class UIManager {
     init() {
         this.setupNavigation();
         this.saveStatusManager.init();
+        
+        // マニュアルボタンの初期化と統合確認
+        const manualInitSuccess = this.manualButtonManager.init();
+        if (manualInitSuccess) {
+            console.log('✓ ManualButtonManager successfully integrated with UI-Manager');
+            
+            // UI競合チェック（DOM読み込み完了後）
+            setTimeout(() => {
+                this.checkUIConflicts();
+            }, 100);
+        } else {
+            console.warn('⚠️ ManualButtonManager initialization failed - manual button may not work properly');
+        }
+        
         this.showSection('sales');
+    }
+
+    /**
+     * UI要素の競合チェック
+     */
+    checkUIConflicts() {
+        const conflicts = [];
+        
+        // マニュアルボタンの位置確認
+        const manualButton = document.getElementById('manual-button');
+        if (manualButton) {
+            const rect = manualButton.getBoundingClientRect();
+            
+            // 他のヘッダー要素との重複チェック
+            const headerElements = document.querySelectorAll('header *:not(#manual-button):not(.manual-button *)');
+            headerElements.forEach(element => {
+                const elementRect = element.getBoundingClientRect();
+                if (this.isOverlapping(rect, elementRect)) {
+                    conflicts.push({
+                        type: 'overlap',
+                        element1: 'manual-button',
+                        element2: element.tagName + (element.id ? '#' + element.id : ''),
+                        severity: 'warning'
+                    });
+                }
+            });
+            
+            // z-index確認
+            const computedStyle = window.getComputedStyle(manualButton);
+            const zIndex = parseInt(computedStyle.zIndex) || 0;
+            if (zIndex < 100) {
+                conflicts.push({
+                    type: 'z-index',
+                    element: 'manual-button',
+                    current: zIndex,
+                    recommended: 100,
+                    severity: 'info'
+                });
+            }
+        } else {
+            conflicts.push({
+                type: 'missing',
+                element: 'manual-button',
+                severity: 'error'
+            });
+        }
+        
+        // 競合があれば報告
+        if (conflicts.length > 0) {
+            console.group('UI Integration Check Results:');
+            conflicts.forEach(conflict => {
+                const logMethod = conflict.severity === 'error' ? 'error' : 
+                                conflict.severity === 'warning' ? 'warn' : 'info';
+                console[logMethod](`${conflict.type}:`, conflict);
+            });
+            console.groupEnd();
+        } else {
+            console.log('✓ No UI conflicts detected for manual button');
+        }
+        
+        return conflicts;
+    }
+
+    /**
+     * 要素の重複判定
+     */
+    isOverlapping(rect1, rect2) {
+        return !(rect1.right < rect2.left || 
+                rect1.left > rect2.right || 
+                rect1.bottom < rect2.top || 
+                rect1.top > rect2.bottom);
     }
 
     /**

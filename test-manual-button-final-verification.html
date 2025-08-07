@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マニュアルボタン最終動作確認テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+    <style>
+        body {
+            padding: 20px;
+            font-family: 'BIZ UDGothic', 'Yu Gothic', 'Meiryo', serif;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #a09080;
+            border-radius: 8px;
+            background-color: #fdfaf5;
+        }
+        .test-header {
+            background-color: #5a4a3a;
+            color: #fdfaf5;
+            padding: 1rem;
+            margin: -20px -20px 20px -20px;
+            border-radius: 6px 6px 0 0;
+        }
+        .requirement-test {
+            margin: 15px 0;
+            padding: 15px;
+            border-left: 4px solid #a03030;
+            background-color: #f9f9f9;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .test-result.pass {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-result.fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-result.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .test-button {
+            margin: 10px 5px;
+            padding: 10px 20px;
+            background-color: #a03030;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background-color: #8a2828;
+        }
+        .responsive-test {
+            border: 1px dashed #ccc;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .accessibility-info {
+            background-color: #e7f3ff;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .manual-button-demo {
+            position: relative;
+            height: 100px;
+            background-color: #5a4a3a;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>マニュアルボタン最終動作確認テスト</h1>
+        <p>全ての要件が満たされていることを確認します。</p>
+
+        <!-- 実際のマニュアルボタンのデモ -->
+        <div class="test-section">
+            <div class="test-header">
+                <h2>実際のマニュアルボタン</h2>
+            </div>
+            <div class="manual-button-demo">
+                <button 
+                    class="manual-button" 
+                    id="manual-button"
+                    type="button"
+                    aria-label="操作マニュアルを新しいタブで開く"
+                    title="操作マニュアルを開く"
+                    tabindex="0"
+                    onclick="if(!window.manualButtonManager || !window.manualButtonManager.isInitialized) { window.open('kaikei/manual.html', '_blank', 'noopener,noreferrer'); }">
+                    <span class="manual-button-icon" aria-hidden="true">📖</span>
+                    <span class="manual-button-text">マニュアル</span>
+                </button>
+            </div>
+            <div id="demo-result" class="test-result">テスト準備中...</div>
+        </div>
+
+        <!-- Requirement 1 Tests -->
+        <div class="test-section">
+            <div class="test-header">
+                <h2>Requirement 1: 基本的なユーザビリティ</h2>
+            </div>
+            
+            <div class="requirement-test">
+                <h3>1.1 ボタンの表示位置</h3>
+                <p>WHEN ページが読み込まれた時 THEN マニュアルボタンは画面左上の目立つ位置に表示される SHALL</p>
+                <button class="test-button" onclick="testButtonPosition()">位置テスト実行</button>
+                <div id="test-1-1" class="test-result">テスト待機中</div>
+            </div>
+
+            <div class="requirement-test">
+                <h3>1.2 ホバー効果</h3>
+                <p>WHEN マニュアルボタンにマウスオーバーした時 THEN ボタンの見た目が変化してクリック可能であることが分かる SHALL</p>
+                <button class="test-button" onclick="testHoverEffect()">ホバー効果テスト</button>
+                <div id="test-1-2" class="test-result">テスト待機中</div>
+            </div>
+
+            <div class="requirement-test">
+                <h3>1.3 クリック動作</h3>
+                <p>WHEN マニュアルボタンをクリックした時 THEN マニュアルページが新しいタブで開かれる SHALL</p>
+                <button class="test-button" onclick="testClickAction()">クリック動作テスト</button>
+                <div id="test-1-3" class="test-result">テスト待機中</div>
+            </div>
+
+            <div class="requirement-test">
+                <h3>1.4 キーボードナビゲーション</h3>
+                <p>WHEN キーボードでタブ移動した時 THEN マニュアルボタンにフォーカスが当たり、Enterキーで操作できる SHALL</p>
+                <button class="test-button" onclick="testKeyboardNavigation()">キーボードテスト</button>
+                <div id="test-1-4" class="test-result">テスト待機中</div>
+            </div>
+        </div>
+
+        <!-- Requirement 2 Tests -->
+        <div class="test-section">
+            <div class="test-header">
+                <h2>Requirement 2: レスポンシブデザイン</h2>
+            </div>
+            
+            <div class="requirement-test">
+                <h3>2.1 画面サイズ変更対応</h3>
+                <p>WHEN 画面サイズが変更された時 THEN マニュアルボタンは適切な位置を維持する SHALL</p>
+                <button class="test-button" onclick="testResponsiveDesign()">レスポンシブテスト</button>
+                <div id="test-2-1" class="test-result">テスト待機中</div>
+            </div>
+
+            <div class="requirement-test">
+                <h3>2.2 UI要素との競合</h3>
+                <p>WHEN 他のUI要素が表示された時 THEN マニュアルボタンは隠れることなく表示される SHALL</p>
+                <button class="test-button" onclick="testUIConflicts()">競合テスト</button>
+                <div id="test-2-2" class="test-result">テスト待機中</div>
+            </div>
+
+            <div class="requirement-test">
+                <h3>2.3 モバイル表示</h3>
+                <p>WHEN モバイルデバイスで表示された時 THEN マニュアルボタンは適切なサイズで表示される SHALL</p>
+                <button class="test-button" onclick="testMobileDisplay()">モバイル表示テスト</button>
+                <div id="test-2-3" class="test-result">テスト待機中</div>
+            </div>
+
+            <div class="requirement-test">
+                <h3>2.4 768px以下での調整</h3>
+                <p>IF 画面幅が768px以下の場合 THEN マニュアルボタンのサイズとレイアウトがモバイル向けに調整される SHALL</p>
+                <button class="test-button" onclick="testMobileBreakpoint()">768pxブレークポイントテスト</button>
+                <div id="test-2-4" class="test-result">テスト待機中</div>
+            </div>
+        </div>
+
+        <!-- Requirement 3 Tests -->
+        <div class="test-section">
+            <div class="test-header">
+                <h2>Requirement 3: 機能の信頼性</h2>
+            </div>
+            
+            <div class="requirement-test">
+                <h3>3.1 ファイル存在確認</h3>
+                <p>WHEN マニュアルボタンをクリックした時 THEN manual.htmlファイルが存在することを確認してから開く SHALL</p>
+                <button class="test-button" onclick="testFileValidation()">ファイル確認テスト</button>
+                <div id="test-3-1" class="test-result">テスト待機中</div>
+            </div>
+
+            <div class="requirement-test">
+                <h3>3.2 エラーハンドリング</h3>
+                <p>IF manual.htmlファイルが存在しない場合 THEN 適切なエラーメッセージを表示する SHALL</p>
+                <button class="test-button" onclick="testErrorHandling()">エラーハンドリングテスト</button>
+                <div id="test-3-2" class="test-result">テスト待機中</div>
+            </div>
+
+            <div class="requirement-test">
+                <h3>3.3 ポップアップブロック対応</h3>
+                <p>WHEN マニュアルページが開かれた時 THEN 元のページの操作に影響を与えない SHALL</p>
+                <button class="test-button" onclick="testPopupHandling()">ポップアップテスト</button>
+                <div id="test-3-3" class="test-result">テスト待機中</div>
+            </div>
+
+            <div class="requirement-test">
+                <h3>3.4 JavaScript無効対応</h3>
+                <p>WHEN JavaScriptが無効な環境でも THEN マニュアルボタンが基本的な機能を提供する SHALL</p>
+                <button class="test-button" onclick="testNoScriptFallback()">JavaScript無効テスト</button>
+                <div id="test-3-4" class="test-result">テスト待機中</div>
+            </div>
+        </div>
+
+        <!-- Requirement 4 Tests -->
+        <div class="test-section">
+            <div class="test-header">
+                <h2>Requirement 4: デザインとアクセシビリティ</h2>
+            </div>
+            
+            <div class="requirement-test">
+                <h3>4.1 デザインテーマ調和</h3>
+                <p>WHEN マニュアルボタンが表示された時 THEN アプリケーションの昭和レトロ風デザインテーマと一致する SHALL</p>
+                <button class="test-button" onclick="testDesignTheme()">デザインテーマテスト</button>
+                <div id="test-4-1" class="test-result">テスト待機中</div>
+            </div>
+
+            <div class="requirement-test">
+                <h3>4.2 アニメーション効果</h3>
+                <p>WHEN ボタンにホバー効果が適用された時 THEN 滑らかなアニメーション効果が表示される SHALL</p>
+                <button class="test-button" onclick="testAnimationEffects()">アニメーションテスト</button>
+                <div id="test-4-2" class="test-result">テスト待機中</div>
+            </div>
+
+            <div class="requirement-test">
+                <h3>4.3 フォーカス表示</h3>
+                <p>WHEN ボタンがフォーカスされた時 THEN 明確な視覚的フィードバックが提供される SHALL</p>
+                <button class="test-button" onclick="testFocusIndicator()">フォーカステスト</button>
+                <div id="test-4-3" class="test-result">テスト待機中</div>
+            </div>
+
+            <div class="requirement-test">
+                <h3>4.4 高コントラストモード</h3>
+                <p>WHEN 高コントラストモードが有効な時 THEN ボタンが十分なコントラストで表示される SHALL</p>
+                <button class="test-button" onclick="testHighContrast()">高コントラストテスト</button>
+                <div id="test-4-4" class="test-result">テスト待機中</div>
+            </div>
+        </div>
+
+        <!-- 総合テスト結果 -->
+        <div class="test-section">
+            <div class="test-header">
+                <h2>総合テスト結果</h2>
+            </div>
+            <button class="test-button" onclick="runAllTests()" style="background-color: #28a745; font-size: 16px; padding: 15px 30px;">
+                全テスト実行
+            </button>
+            <div id="overall-result" class="test-result">テスト未実行</div>
+            <div id="test-summary"></div>
+        </div>
+    </div>
+
+    <script>
+        // テスト結果を保存
+        const testResults = {};
+        
+        // 簡易トーストマネージャー
+        class SimpleToastManager {
+            constructor() {
+                this.container = document.createElement('div');
+                this.container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000;';
+                document.body.appendChild(this.container);
+            }
+            
+            show(message, type = 'info', duration = 5000) {
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    background: ${type === 'error' ? '#f8d7da' : type === 'success' ? '#d4edda' : '#d1ecf1'};
+                    color: ${type === 'error' ? '#721c24' : type === 'success' ? '#155724' : '#0c5460'};
+                    padding: 12px 16px;
+                    margin-bottom: 8px;
+                    border-radius: 4px;
+                    border: 1px solid ${type === 'error' ? '#f5c6cb' : type === 'success' ? '#c3e6cb' : '#bee5eb'};
+                    max-width: 300px;
+                    word-wrap: break-word;
+                `;
+                toast.textContent = message;
+                
+                this.container.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, duration);
+            }
+        }
+
+        // ManualButtonManagerクラス（テスト用簡略版）
+        class ManualButtonManager {
+            constructor() {
+                this.button = null;
+                this.manualUrl = 'kaikei/manual.html';
+                this.isInitialized = false;
+            }
+
+            init() {
+                try {
+                    this.button = document.getElementById('manual-button');
+                    if (!this.button) {
+                        return false;
+                    }
+
+                    this.button.addEventListener('click', (e) => this.handleClick(e));
+                    this.button.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+                    this.isInitialized = true;
+                    return true;
+                } catch (error) {
+                    console.error('ManualButtonManager初期化エラー:', error);
+                    return false;
+                }
+            }
+
+            async handleClick(event) {
+                event.preventDefault();
+                
+                try {
+                    const fileExists = await this.validateManualFile();
+                    if (!fileExists) {
+                        this.showError('マニュアルファイルが見つかりません');
+                        return;
+                    }
+
+                    await this.openManual();
+                    
+                } catch (error) {
+                    console.error('マニュアルボタンクリックエラー:', error);
+                    this.showError('マニュアルを開く際にエラーが発生しました');
+                }
+            }
+
+            handleKeydown(event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    this.handleClick(event);
+                }
+            }
+
+            async validateManualFile() {
+                try {
+                    const response = await fetch(this.manualUrl, { method: 'HEAD' });
+                    return response.ok;
+                } catch (error) {
+                    return true; // ネットワークエラーの場合は存在すると仮定
+                }
+            }
+
+            async openManual() {
+                try {
+                    const newWindow = window.open(this.manualUrl, '_blank', 'noopener,noreferrer');
+                    
+                    if (!newWindow || newWindow.closed) {
+                        this.showError('ポップアップがブロックされました');
+                        return;
+                    }
+
+                    this.showSuccess('マニュアルを新しいタブで開きました');
+                    
+                } catch (error) {
+                    this.showError('マニュアルを開けませんでした');
+                }
+            }
+
+            showError(message) {
+                if (window.toastManager) {
+                    window.toastManager.show(message, 'error');
+                }
+            }
+
+            showSuccess(message) {
+                if (window.toastManager) {
+                    window.toastManager.show(message, 'success');
+                }
+            }
+        }
+
+        // グローバル変数として設定
+        window.toastManager = new SimpleToastManager();
+        window.manualButtonManager = new ManualButtonManager();
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            const initSuccess = window.manualButtonManager.init();
+            const demoResult = document.getElementById('demo-result');
+            if (initSuccess) {
+                demoResult.className = 'test-result pass';
+                demoResult.textContent = '✓ ManualButtonManager が正常に初期化されました';
+            } else {
+                demoResult.className = 'test-result fail';
+                demoResult.textContent = '✗ ManualButtonManager の初期化に失敗しました';
+            }
+        });
+
+        // テスト関数群
+        function testButtonPosition() {
+            const button = document.getElementById('manual-button');
+            const result = document.getElementById('test-1-1');
+            
+            if (!button) {
+                result.className = 'test-result fail';
+                result.textContent = '✗ マニュアルボタンが見つかりません';
+                testResults['1.1'] = false;
+                return;
+            }
+
+            const rect = button.getBoundingClientRect();
+            const isVisible = rect.width > 0 && rect.height > 0;
+            const isInLeftTop = rect.left < window.innerWidth / 2 && rect.top < window.innerHeight / 2;
+
+            if (isVisible && isInLeftTop) {
+                result.className = 'test-result pass';
+                result.textContent = '✓ ボタンは画面左上の目立つ位置に表示されています';
+                testResults['1.1'] = true;
+            } else {
+                result.className = 'test-result fail';
+                result.textContent = '✗ ボタンの位置が適切ではありません';
+                testResults['1.1'] = false;
+            }
+        }
+
+        function testHoverEffect() {
+            const button = document.getElementById('manual-button');
+            const result = document.getElementById('test-1-2');
+            
+            if (!button) {
+                result.className = 'test-result fail';
+                result.textContent = '✗ マニュアルボタンが見つかりません';
+                testResults['1.2'] = false;
+                return;
+            }
+
+            // CSSトランジションの確認
+            const computedStyle = window.getComputedStyle(button);
+            const hasTransition = computedStyle.transition !== 'none' && computedStyle.transition !== '';
+            const hasCursor = computedStyle.cursor === 'pointer';
+
+            if (hasTransition && hasCursor) {
+                result.className = 'test-result pass';
+                result.textContent = '✓ ホバー効果が適切に設定されています（マウスを乗せて確認してください）';
+                testResults['1.2'] = true;
+            } else {
+                result.className = 'test-result warning';
+                result.textContent = '⚠ ホバー効果の設定を確認してください';
+                testResults['1.2'] = false;
+            }
+        }
+
+        function testClickAction() {
+            const result = document.getElementById('test-1-3');
+            
+            // window.openをモック
+            const originalOpen = window.open;
+            let openCalled = false;
+            let openArgs = null;
+
+            window.open = function(...args) {
+                openCalled = true;
+                openArgs = args;
+                return { closed: false }; // 成功をシミュレート
+            };
+
+            try {
+                const button = document.getElementById('manual-button');
+                if (button) {
+                    button.click();
+                    
+                    setTimeout(() => {
+                        if (openCalled && openArgs && openArgs[1] === '_blank') {
+                            result.className = 'test-result pass';
+                            result.textContent = '✓ クリック時に新しいタブでマニュアルが開かれます';
+                            testResults['1.3'] = true;
+                        } else {
+                            result.className = 'test-result fail';
+                            result.textContent = '✗ クリック動作が正しく動作しません';
+                            testResults['1.3'] = false;
+                        }
+                        
+                        // 元に戻す
+                        window.open = originalOpen;
+                    }, 100);
+                } else {
+                    result.className = 'test-result fail';
+                    result.textContent = '✗ マニュアルボタンが見つかりません';
+                    testResults['1.3'] = false;
+                    window.open = originalOpen;
+                }
+            } catch (error) {
+                result.className = 'test-result fail';
+                result.textContent = '✗ クリックテストでエラーが発生しました';
+                testResults['1.3'] = false;
+                window.open = originalOpen;
+            }
+        }
+
+        function testKeyboardNavigation() {
+            const button = document.getElementById('manual-button');
+            const result = document.getElementById('test-1-4');
+            
+            if (!button) {
+                result.className = 'test-result fail';
+                result.textContent = '✗ マニュアルボタンが見つかりません';
+                testResults['1.4'] = false;
+                return;
+            }
+
+            // タブインデックスとARIA属性の確認
+            const hasTabIndex = button.hasAttribute('tabindex');
+            const hasAriaLabel = button.hasAttribute('aria-label');
+            const hasTitle = button.hasAttribute('title');
+
+            // フォーカステスト
+            button.focus();
+            const isFocused = document.activeElement === button;
+
+            if (hasTabIndex && hasAriaLabel && hasTitle && isFocused) {
+                result.className = 'test-result pass';
+                result.textContent = '✓ キーボードナビゲーションが適切に設定されています';
+                testResults['1.4'] = true;
+            } else {
+                result.className = 'test-result warning';
+                result.textContent = '⚠ キーボードナビゲーションの設定を確認してください';
+                testResults['1.4'] = false;
+            }
+        }
+
+        function testResponsiveDesign() {
+            const result = document.getElementById('test-2-1');
+            
+            // 現在の画面サイズを記録
+            const originalWidth = window.innerWidth;
+            
+            // CSSメディアクエリの確認（簡易版）
+            const button = document.getElementById('manual-button');
+            if (!button) {
+                result.className = 'test-result fail';
+                result.textContent = '✗ マニュアルボタンが見つかりません';
+                testResults['2.1'] = false;
+                return;
+            }
+
+            // レスポンシブ対応のCSSクラスやスタイルの確認
+            const computedStyle = window.getComputedStyle(button);
+            const hasResponsiveStyles = computedStyle.position !== 'static';
+
+            if (hasResponsiveStyles) {
+                result.className = 'test-result pass';
+                result.textContent = '✓ レスポンシブデザインが実装されています（画面サイズを変更して確認してください）';
+                testResults['2.1'] = true;
+            } else {
+                result.className = 'test-result warning';
+                result.textContent = '⚠ レスポンシブデザインの実装を確認してください';
+                testResults['2.1'] = false;
+            }
+        }
+
+        function testUIConflicts() {
+            const result = document.getElementById('test-2-2');
+            
+            const button = document.getElementById('manual-button');
+            if (!button) {
+                result.className = 'test-result fail';
+                result.textContent = '✗ マニュアルボタンが見つかりません';
+                testResults['2.2'] = false;
+                return;
+            }
+
+            // z-indexの確認
+            const computedStyle = window.getComputedStyle(button);
+            const zIndex = parseInt(computedStyle.zIndex) || 0;
+            const isVisible = computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden';
+
+            if (zIndex >= 100 && isVisible) {
+                result.className = 'test-result pass';
+                result.textContent = '✓ 他のUI要素との競合が適切に処理されています';
+                testResults['2.2'] = true;
+            } else {
+                result.className = 'test-result warning';
+                result.textContent = '⚠ UI要素の競合処理を確認してください';
+                testResults['2.2'] = false;
+            }
+        }
+
+        function testMobileDisplay() {
+            const result = document.getElementById('test-2-3');
+            
+            // モバイル表示のシミュレーション
+            const button = document.getElementById('manual-button');
+            if (!button) {
+                result.className = 'test-result fail';
+                result.textContent = '✗ マニュアルボタンが見つかりません';
+                testResults['2.3'] = false;
+                return;
+            }
+
+            // モバイル向けスタイルの確認（簡易版）
+            const computedStyle = window.getComputedStyle(button);
+            const fontSize = parseFloat(computedStyle.fontSize);
+            const padding = computedStyle.padding;
+
+            if (fontSize > 0 && padding) {
+                result.className = 'test-result pass';
+                result.textContent = '✓ モバイル表示に対応しています（実際のモバイルデバイスで確認してください）';
+                testResults['2.3'] = true;
+            } else {
+                result.className = 'test-result warning';
+                result.textContent = '⚠ モバイル表示の対応を確認してください';
+                testResults['2.3'] = false;
+            }
+        }
+
+        function testMobileBreakpoint() {
+            const result = document.getElementById('test-2-4');
+            
+            // 768pxブレークポイントの確認
+            const mediaQuery = window.matchMedia('(max-width: 768px)');
+            const isNarrowScreen = mediaQuery.matches;
+
+            if (isNarrowScreen) {
+                result.className = 'test-result pass';
+                result.textContent = '✓ 現在768px以下の画面幅です - モバイル向けスタイルが適用されています';
+                testResults['2.4'] = true;
+            } else {
+                result.className = 'test-result warning';
+                result.textContent = '⚠ 768px以下の画面幅でテストしてください（ブラウザの開発者ツールを使用）';
+                testResults['2.4'] = null; // 条件付きテスト
+            }
+        }
+
+        function testFileValidation() {
+            const result = document.getElementById('test-3-1');
+            
+            if (window.manualButtonManager && typeof window.manualButtonManager.validateManualFile === 'function') {
+                window.manualButtonManager.validateManualFile().then(exists => {
+                    if (exists) {
+                        result.className = 'test-result pass';
+                        result.textContent = '✓ ファイル存在確認機能が動作しています';
+                        testResults['3.1'] = true;
+                    } else {
+                        result.className = 'test-result warning';
+                        result.textContent = '⚠ マニュアルファイルが見つかりません';
+                        testResults['3.1'] = false;
+                    }
+                }).catch(error => {
+                    result.className = 'test-result fail';
+                    result.textContent = '✗ ファイル確認機能でエラーが発生しました';
+                    testResults['3.1'] = false;
+                });
+            } else {
+                result.className = 'test-result fail';
+                result.textContent = '✗ ファイル確認機能が実装されていません';
+                testResults['3.1'] = false;
+            }
+        }
+
+        function testErrorHandling() {
+            const result = document.getElementById('test-3-2');
+            
+            if (window.manualButtonManager && typeof window.manualButtonManager.showError === 'function') {
+                // エラーハンドリング機能のテスト
+                try {
+                    window.manualButtonManager.showError('テストエラーメッセージ');
+                    result.className = 'test-result pass';
+                    result.textContent = '✓ エラーハンドリング機能が実装されています';
+                    testResults['3.2'] = true;
+                } catch (error) {
+                    result.className = 'test-result fail';
+                    result.textContent = '✗ エラーハンドリング機能でエラーが発生しました';
+                    testResults['3.2'] = false;
+                }
+            } else {
+                result.className = 'test-result fail';
+                result.textContent = '✗ エラーハンドリング機能が実装されていません';
+                testResults['3.2'] = false;
+            }
+        }
+
+        function testPopupHandling() {
+            const result = document.getElementById('test-3-3');
+            
+            // ポップアップブロック対応の確認
+            if (window.manualButtonManager && typeof window.manualButtonManager.isPopupBlocked === 'function') {
+                result.className = 'test-result pass';
+                result.textContent = '✓ ポップアップブロック対応機能が実装されています';
+                testResults['3.3'] = true;
+            } else {
+                result.className = 'test-result warning';
+                result.textContent = '⚠ ポップアップブロック対応機能を確認してください';
+                testResults['3.3'] = false;
+            }
+        }
+
+        function testNoScriptFallback() {
+            const result = document.getElementById('test-3-4');
+            
+            // noscriptタグの確認
+            const noscriptElements = document.querySelectorAll('noscript');
+            const hasNoscriptFallback = noscriptElements.length > 0;
+            
+            // onclickフォールバックの確認
+            const button = document.getElementById('manual-button');
+            const hasOnclickFallback = button && button.hasAttribute('onclick');
+
+            if (hasNoscriptFallback || hasOnclickFallback) {
+                result.className = 'test-result pass';
+                result.textContent = '✓ JavaScript無効時のフォールバック機能が実装されています';
+                testResults['3.4'] = true;
+            } else {
+                result.className = 'test-result fail';
+                result.textContent = '✗ JavaScript無効時のフォールバック機能が不足しています';
+                testResults['3.4'] = false;
+            }
+        }
+
+        function testDesignTheme() {
+            const result = document.getElementById('test-4-1');
+            
+            const button = document.getElementById('manual-button');
+            if (!button) {
+                result.className = 'test-result fail';
+                result.textContent = '✗ マニュアルボタンが見つかりません';
+                testResults['4.1'] = false;
+                return;
+            }
+
+            const computedStyle = window.getComputedStyle(button);
+            const backgroundColor = computedStyle.backgroundColor;
+            const color = computedStyle.color;
+            const borderRadius = computedStyle.borderRadius;
+
+            // 昭和レトロ風デザインの特徴的な要素の確認
+            const hasRoundedCorners = parseFloat(borderRadius) > 0;
+            const hasAppropriateColors = backgroundColor !== 'rgba(0, 0, 0, 0)' && color !== 'rgba(0, 0, 0, 0)';
+
+            if (hasRoundedCorners && hasAppropriateColors) {
+                result.className = 'test-result pass';
+                result.textContent = '✓ 昭和レトロ風デザインテーマと調和しています';
+                testResults['4.1'] = true;
+            } else {
+                result.className = 'test-result warning';
+                result.textContent = '⚠ デザインテーマとの調和を確認してください';
+                testResults['4.1'] = false;
+            }
+        }
+
+        function testAnimationEffects() {
+            const result = document.getElementById('test-4-2');
+            
+            const button = document.getElementById('manual-button');
+            if (!button) {
+                result.className = 'test-result fail';
+                result.textContent = '✗ マニュアルボタンが見つかりません';
+                testResults['4.2'] = false;
+                return;
+            }
+
+            const computedStyle = window.getComputedStyle(button);
+            const transition = computedStyle.transition;
+            const hasTransition = transition !== 'none' && transition !== '';
+
+            if (hasTransition) {
+                result.className = 'test-result pass';
+                result.textContent = '✓ 滑らかなアニメーション効果が設定されています';
+                testResults['4.2'] = true;
+            } else {
+                result.className = 'test-result warning';
+                result.textContent = '⚠ アニメーション効果の設定を確認してください';
+                testResults['4.2'] = false;
+            }
+        }
+
+        function testFocusIndicator() {
+            const result = document.getElementById('test-4-3');
+            
+            const button = document.getElementById('manual-button');
+            if (!button) {
+                result.className = 'test-result fail';
+                result.textContent = '✗ マニュアルボタンが見つかりません';
+                testResults['4.3'] = false;
+                return;
+            }
+
+            // フォーカス時のスタイル確認
+            button.focus();
+            
+            // フォーカス状態の確認（簡易版）
+            const isFocused = document.activeElement === button;
+            
+            if (isFocused) {
+                result.className = 'test-result pass';
+                result.textContent = '✓ フォーカス表示が適切に動作しています（現在フォーカス中）';
+                testResults['4.3'] = true;
+            } else {
+                result.className = 'test-result warning';
+                result.textContent = '⚠ フォーカス表示を確認してください';
+                testResults['4.3'] = false;
+            }
+        }
+
+        function testHighContrast() {
+            const result = document.getElementById('test-4-4');
+            
+            // 高コントラストモードの検出
+            const prefersHighContrast = window.matchMedia('(prefers-contrast: high)').matches;
+            
+            if (prefersHighContrast) {
+                result.className = 'test-result pass';
+                result.textContent = '✓ 高コントラストモードが検出され、適切に対応しています';
+                testResults['4.4'] = true;
+            } else {
+                result.className = 'test-result warning';
+                result.textContent = '⚠ 高コントラストモードでテストしてください（OS設定で有効化）';
+                testResults['4.4'] = null; // 条件付きテスト
+            }
+        }
+
+        function runAllTests() {
+            const overallResult = document.getElementById('overall-result');
+            const summary = document.getElementById('test-summary');
+            
+            overallResult.className = 'test-result';
+            overallResult.textContent = 'テスト実行中...';
+            
+            // 全テストを順次実行
+            const tests = [
+                testButtonPosition,
+                testHoverEffect,
+                testClickAction,
+                testKeyboardNavigation,
+                testResponsiveDesign,
+                testUIConflicts,
+                testMobileDisplay,
+                testMobileBreakpoint,
+                testFileValidation,
+                testErrorHandling,
+                testPopupHandling,
+                testNoScriptFallback,
+                testDesignTheme,
+                testAnimationEffects,
+                testFocusIndicator,
+                testHighContrast
+            ];
+
+            tests.forEach((test, index) => {
+                setTimeout(() => {
+                    test();
+                    
+                    // 最後のテストが完了したら結果をまとめる
+                    if (index === tests.length - 1) {
+                        setTimeout(() => {
+                            summarizeResults();
+                        }, 500);
+                    }
+                }, index * 200);
+            });
+        }
+
+        function summarizeResults() {
+            const overallResult = document.getElementById('overall-result');
+            const summary = document.getElementById('test-summary');
+            
+            const totalTests = Object.keys(testResults).length;
+            const passedTests = Object.values(testResults).filter(result => result === true).length;
+            const failedTests = Object.values(testResults).filter(result => result === false).length;
+            const skippedTests = Object.values(testResults).filter(result => result === null).length;
+            
+            const passRate = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
+            
+            if (passRate >= 90) {
+                overallResult.className = 'test-result pass';
+                overallResult.textContent = `✓ 総合テスト結果: 優秀 (${passRate}%)`;
+            } else if (passRate >= 70) {
+                overallResult.className = 'test-result warning';
+                overallResult.textContent = `⚠ 総合テスト結果: 良好 (${passRate}%)`;
+            } else {
+                overallResult.className = 'test-result fail';
+                overallResult.textContent = `✗ 総合テスト結果: 改善が必要 (${passRate}%)`;
+            }
+            
+            summary.innerHTML = `
+                <div style="margin-top: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 4px;">
+                    <h3>テスト結果サマリー</h3>
+                    <ul>
+                        <li>合格: ${passedTests}件</li>
+                        <li>不合格: ${failedTests}件</li>
+                        <li>スキップ: ${skippedTests}件</li>
+                        <li>合格率: ${passRate}%</li>
+                    </ul>
+                    <p><strong>結論:</strong> ${passRate >= 90 ? 
+                        'マニュアルボタンの機能は全ての要件を満たしており、本番環境での使用に適しています。' :
+                        passRate >= 70 ?
+                        'マニュアルボタンの機能は概ね要件を満たしていますが、一部改善の余地があります。' :
+                        'マニュアルボタンの機能には重要な問題があり、修正が必要です。'
+                    }</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

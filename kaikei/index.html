@@ -11,6 +11,30 @@
 <body>
     <div class="container">
         <header>
+            <button 
+                class="manual-button" 
+                id="manual-button"
+                type="button"
+                aria-label="操作マニュアルを新しいタブで開く"
+                title="操作マニュアルを開く"
+                tabindex="0"
+                onclick="if(!window.manualButtonManager || !window.manualButtonManager.isInitialized) { window.open('manual.html', '_blank', 'noopener,noreferrer'); }">
+                <span class="manual-button-icon" aria-hidden="true">📖</span>
+                <span class="manual-button-text">マニュアル</span>
+            </button>
+            
+            <!-- JavaScript無効時のフォールバック -->
+            <noscript>
+                <a href="manual.html" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="manual-button manual-button-noscript"
+                   title="操作マニュアルを開く（JavaScript無効）"
+                   style="display: inline-block; text-decoration: none; position: absolute; top: 1rem; left: 1.5rem;">
+                    <span class="manual-button-icon" aria-hidden="true">📖</span>
+                    <span class="manual-button-text">マニュアル</span>
+                </a>
+            </noscript>
             <h1>もうかりまっか <span class="version-display" id="app-version">v1.0.0</span></h1>
             <div class="header-controls">
                 <div id="save-status" class="save-status">
