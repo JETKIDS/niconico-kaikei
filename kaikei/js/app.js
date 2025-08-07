@@ -155,6 +155,12 @@ class App {
             
             console.log('アプリケーションの初期化が完了しました');
             
+            // バージョンマネージャーを初期化
+            if (window.versionManager) {
+                window.versionManager.init();
+                console.log(`アプリケーションバージョン: ${window.versionManager.getFullVersion()}`);
+            }
+            
             // メモリ使用量をログ出力
             if (performance.memory) {
                 const memoryMB = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);

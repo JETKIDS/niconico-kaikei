@@ -11,7 +11,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>もうかりまっか</h1>
+            <h1>もうかりまっか <span class="version-display" id="app-version">v1.0.0</span></h1>
             <div class="header-controls">
                 <div id="save-status" class="save-status">
                     <span id="save-status-text">データ読み込み中...</span>
@@ -69,6 +69,10 @@
                      script.src = 'lib/chart.min.js'; 
                      script.onerror = function() { console.warn('Chart.js library not found - charts will not work'); }; 
                      document.head.appendChild(script);"></script>
+    
+    <!-- Version Management System -->
+    <script src="js/version.js"></script>
+    <script src="js/version-utils.js"></script>
     
     <!-- Include application scripts in dependency order -->
     <script>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>バージョン管理システムテスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+    <style>
+        .test-section {
+            margin: 1rem 0;
+            padding: 1rem;
+            border: 1px solid #d6c8b8;
+            border-radius: 8px;
+            background-color: #fdfaf5;
+        }
+        .test-title {
+            color: #8b0000;
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+        .version-demo {
+            background-color: #5a4a3a;
+            color: #ffd700;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        .version-demo h1 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin: 0;
+            font-size: 2.2rem;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .info-display {
+            background-color: #f5f0e8;
+            border: 1px solid #d6c8b8;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>バージョン管理システムテスト</h1>
+        </header>
+
+        <main>
+            <div id="content-area">
+                <div class="test-section">
+                    <h2 class="test-title">1. バージョン表示デモ</h2>
+                    <p>実際のアプリケーションでのバージョン表示をシミュレートします。</p>
+                    
+                    <div class="version-demo">
+                        <h1>もうかりまっか <span class="version-display" id="demo-version">v1.0.0</span></h1>
+                    </div>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">2. バージョン管理操作</h2>
+                    <p>各種バージョン更新操作をテストできます。</p>
+                    
+                    <div class="button-grid">
+                        <button class="btn btn-primary" onclick="testPatchUpdate()">パッチ更新 (v1.0.1)</button>
+                        <button class="btn btn-primary" onclick="testMinorUpdate()">マイナー更新 (v1.1.0)</button>
+                        <button class="btn btn-primary" onclick="testMajorUpdate()">メジャー更新 (v2.0.0)</button>
+                        <button class="btn btn-secondary" onclick="showCurrentVersion()">現在のバージョン表示</button>
+                        <button class="btn btn-secondary" onclick="showVersionHistory()">更新履歴表示</button>
+                        <button class="btn btn-secondary" onclick="resetVersion()">バージョンリセット</button>
+                    </div>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">3. 自動更新シミュレーション</h2>
+                    <p>実際の開発シナリオでの自動更新をテストします。</p>
+                    
+                    <div class="button-grid">
+                        <button class="btn btn-primary" onclick="simulateFeatureAdd()">新機能追加</button>
+                        <button class="btn btn-primary" onclick="simulateBugFix()">バグ修正</button>
+                        <button class="btn btn-danger" onclick="simulateBreakingChange()">破壊的変更</button>
+                        <button class="btn btn-secondary" onclick="simulateDataChange()">データ変更</button>
+                    </div>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">4. バージョン情報表示</h2>
+                    <div id="version-info" class="info-display">バージョン情報を読み込み中...</div>
+                    <button class="btn btn-primary" onclick="refreshVersionInfo()">情報更新</button>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">5. 使用方法</h2>
+                    <div class="info-display">
+開発者向けコマンド:
+
+// 手動でバージョンを更新
+updateVersion('patch', 'バグ修正');
+updateVersion('minor', '新機能追加');
+updateVersion('major', '破壊的変更');
+
+// 便利な関数
+addFeature('多店舗管理機能');
+fixBug('レポート表示エラー');
+breakingChange('API仕様変更');
+
+// バージョン情報表示
+showVersionInfo();
+
+// 自動更新イベント
+document.dispatchEvent(new CustomEvent('featureAdded', {
+    detail: { description: '新機能の説明' }
+}));
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- バージョン管理システム -->
+    <script src="kaikei/js/version.js"></script>
+    <script src="kaikei/js/version-utils.js"></script>
+
+    <script>
+        let testVersionManager;
+
+        // テスト用のバージョンマネージャーを初期化
+        function initTestVersionManager() {
+            testVersionManager = new VersionManager();
+            testVersionManager.init();
+            
+            // デモ用のバージョン表示を更新
+            const demoVersion = document.getElementById('demo-version');
+            if (demoVersion) {
+                demoVersion.textContent = testVersionManager.getShortVersion();
+                demoVersion.addEventListener('click', () => {
+                    if (window.versionUtils) {
+                        window.versionUtils.showVersionInfo();
+                    }
+                });
+            }
+            
+            refreshVersionInfo();
+        }
+
+        function testPatchUpdate() {
+            if (testVersionManager) {
+                const newVersion = testVersionManager.autoIncrement('patch', 'テスト用パッチ更新');
+                updateDemoDisplay();
+                alert(`パッチ更新完了: ${newVersion}`);
+            }
+        }
+
+        function testMinorUpdate() {
+            if (testVersionManager) {
+                const newVersion = testVersionManager.autoIncrement('minor', 'テスト用マイナー更新');
+                updateDemoDisplay();
+                alert(`マイナー更新完了: ${newVersion}`);
+            }
+        }
+
+        function testMajorUpdate() {
+            if (testVersionManager) {
+                const newVersion = testVersionManager.autoIncrement('major', 'テスト用メジャー更新');
+                updateDemoDisplay();
+                alert(`メジャー更新完了: ${newVersion}`);
+            }
+        }
+
+        function showCurrentVersion() {
+            if (testVersionManager) {
+                const info = testVersionManager.getVersionInfo();
+                alert(`現在のバージョン: ${info.version}\nビルド: ${info.build}\n最終更新: ${new Date(info.lastUpdate).toLocaleString('ja-JP')}`);
+            }
+        }
+
+        function showVersionHistory() {
+            if (testVersionManager) {
+                const history = testVersionManager.getUpdateHistory();
+                if (history.length === 0) {
+                    alert('更新履歴がありません');
+                    return;
+                }
+                
+                let historyText = '更新履歴:\n\n';
+                history.reverse().forEach(item => {
+                    const date = new Date(item.timestamp).toLocaleString('ja-JP');
+                    historyText += `${item.version} (${item.changeType}) - ${item.description}\n${date}\n\n`;
+                });
+                
+                alert(historyText);
+            }
+        }
+
+        function resetVersion() {
+            if (confirm('バージョンを1.0.0にリセットしますか？')) {
+                localStorage.removeItem('app-version');
+                localStorage.removeItem('version-history');
+                initTestVersionManager();
+                alert('バージョンがリセットされました');
+            }
+        }
+
+        function simulateFeatureAdd() {
+            if (window.versionUtils) {
+                const newVersion = window.versionUtils.addFeature('テスト新機能');
+                updateDemoDisplay();
+                alert(`新機能追加: ${newVersion}`);
+            }
+        }
+
+        function simulateBugFix() {
+            if (window.versionUtils) {
+                const newVersion = window.versionUtils.fixBug('テストバグ修正');
+                updateDemoDisplay();
+                alert(`バグ修正: ${newVersion}`);
+            }
+        }
+
+        function simulateBreakingChange() {
+            if (confirm('破壊的変更を実行しますか？（メジャーバージョンが上がります）')) {
+                if (window.versionUtils) {
+                    const newVersion = window.versionUtils.breakingChange('テスト破壊的変更');
+                    updateDemoDisplay();
+                    alert(`破壊的変更: ${newVersion}`);
+                }
+            }
+        }
+
+        function simulateDataChange() {
+            // データ変更イベントをシミュレート
+            document.dispatchEvent(new CustomEvent('dataChanged', {
+                detail: { category: 'test', action: 'add' }
+            }));
+            
+            setTimeout(() => {
+                updateDemoDisplay();
+                alert('データ変更によるバージョン更新が実行されました');
+            }, 100);
+        }
+
+        function updateDemoDisplay() {
+            if (testVersionManager) {
+                const demoVersion = document.getElementById('demo-version');
+                if (demoVersion) {
+                    demoVersion.textContent = testVersionManager.getShortVersion();
+                }
+                refreshVersionInfo();
+            }
+        }
+
+        function refreshVersionInfo() {
+            if (testVersionManager) {
+                const info = testVersionManager.getVersionInfo();
+                const infoDisplay = document.getElementById('version-info');
+                if (infoDisplay) {
+                    infoDisplay.textContent = JSON.stringify(info, null, 2);
+                }
+            }
+        }
+
+        // ページ読み込み時に初期化
+        window.addEventListener('load', () => {
+            setTimeout(initTestVersionManager, 500);
+        });
+    </script>
+</body>
+</html>
