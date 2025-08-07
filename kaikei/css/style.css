@@ -479,16 +479,14 @@ main {
     left: 0;
     bottom: 0;
     right: 0;
-    background-image: linear-gradient(
-        -45deg,
-        rgba(255, 255, 255, 0.2) 25%,
-        transparent 25%,
-        transparent 50%,
-        rgba(255, 255, 255, 0.2) 50%,
-        rgba(255, 255, 255, 0.2) 75%,
-        transparent 75%,
-        transparent
-    );
+    background-image: linear-gradient(-45deg,
+            rgba(255, 255, 255, 0.2) 25%,
+            transparent 25%,
+            transparent 50%,
+            rgba(255, 255, 255, 0.2) 50%,
+            rgba(255, 255, 255, 0.2) 75%,
+            transparent 75%,
+            transparent);
     background-size: 20px 20px;
     animation: move 1s linear infinite;
 }
@@ -497,6 +495,7 @@ main {
     0% {
         background-position: 0 0;
     }
+
     100% {
         background-position: 20px 20px;
     }
@@ -644,12 +643,36 @@ main {
         font-size: 0.8rem;
     }
 
-    .data-table.store-table th:nth-child(1) { width: 25%; } /* 店舗名 */
-    .data-table.store-table th:nth-child(2) { width: 20%; } /* 住所 */
-    .data-table.store-table th:nth-child(3) { width: 15%; } /* 開店日 */
-    .data-table.store-table th:nth-child(4) { width: 15%; } /* 備考 */
-    .data-table.store-table th:nth-child(5) { width: 10%; } /* 状態 */
-    .data-table.store-table th:nth-child(6) { width: 15%; } /* 操作 */
+    .data-table.store-table th:nth-child(1) {
+        width: 25%;
+    }
+
+    /* 店舗名 */
+    .data-table.store-table th:nth-child(2) {
+        width: 20%;
+    }
+
+    /* 住所 */
+    .data-table.store-table th:nth-child(3) {
+        width: 15%;
+    }
+
+    /* 開店日 */
+    .data-table.store-table th:nth-child(4) {
+        width: 15%;
+    }
+
+    /* 備考 */
+    .data-table.store-table th:nth-child(5) {
+        width: 10%;
+    }
+
+    /* 状態 */
+    .data-table.store-table th:nth-child(6) {
+        width: 15%;
+    }
+
+    /* 操作 */
 
     .store-action-btn {
         padding: 0.2rem 0.4rem;
@@ -2177,8 +2200,13 @@ footer {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* 店舗切り替え時のローディング */

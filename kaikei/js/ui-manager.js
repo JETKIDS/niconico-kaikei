@@ -3188,15 +3188,16 @@ class UIManager {
      */
     showConsolidatedReport(year, month) {
         try {
-            const chartManager = new ChartManager(this.dataManager);
-            const consolidatedData = chartManager.calculateConsolidatedBalance(year, month);
+            const consolidatedData = window.chartManager.calculateConsolidatedBalance(year, month);
             
             const reportHTML = this.generateConsolidatedReportHTML(consolidatedData);
             document.getElementById('consolidated-report').innerHTML = reportHTML;
             
             // グラフを描画（DOM要素が作成された後に実行）
             setTimeout(() => {
-                chartManager.renderConsolidatedChart(year, month);
+                if (window.chartManager && typeof window.chartManager.renderConsolidatedChart === 'function') {
+                    window.chartManager.renderConsolidatedChart(year, month);
+                }
             }, 100);
             
         } catch (error) {
@@ -3211,8 +3212,7 @@ class UIManager {
      */
     showComparisonReport(year, month) {
         try {
-            const chartManager = new ChartManager(this.dataManager);
-            const comparisonData = chartManager.calculateStoreComparison(year, month);
+            const comparisonData = window.chartManager.calculateStoreComparison(year, month);
             
             const reportHTML = this.generateComparisonReportHTML(comparisonData, year, month);
             document.getElementById('comparison-report').innerHTML = reportHTML;

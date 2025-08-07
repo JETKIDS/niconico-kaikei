@@ -272,6 +272,120 @@ class ChartManager {
         }
         this.charts.clear();
     }
+
+    /**
+     * 統合レポート用の収支計算
+     */
+    calculateConsolidatedBalance(year, month) {
+        try {
+            if (!window.dataManager || !window.storeManager) {
+                console.warn('DataManager または StoreManager が利用できません');
+                return {
+                    totalIncome: 0,
+                    totalExpense: 0,
+                    balance: 0,
+                    stores: []
+                };
+            }
+
+            const stores = window.storeManager.getAllStores();
+            const storeBalances = [];
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            stores.forEach(store => {
+                const storeData = window.dataManager.getRecordsByMonth(year, month, store.id);
+                
+                // 収入計算（売上）
+                const income = storeData.sales?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                
+                // 支出計算（仕入、固定費、変動費、人件費、消費税、月次支払い）
+                const purchases = storeData.purchases?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                const fixedCosts = storeData.fixedCosts?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                const variableCosts = storeData.variableCosts?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                const laborCosts = storeData.laborCosts?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                const consumptionTax = storeData.consumptionTax?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                const monthlyPayments = storeData.monthlyPayments?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                
+                const expense = purchases + fixedCosts + variableCosts + laborCosts + consumptionTax + monthlyPayments;
+                const balance = income - expense;
+
+                storeBalances.push({
+                    store: store,
+                    income: income,
+                    expense: expense,
+                    balance: balance
+                });
+
+                totalIncome += income;
+                totalExpense += expense;
+            });
+
+            return {
+                totalIncome: totalIncome,
+                totalExpense: totalExpense,
+                balance: totalIncome - totalExpense,
+                stores: storeBalances
+            };
+        } catch (error) {
+            console.error('統合収支計算エラー:', error);
+            return {
+                totalIncome: 0,
+                totalExpense: 0,
+                balance: 0,
+                stores: []
+            };
+        }
+    }
+
+    /**
+     * 店舗比較レポート用の計算
+     */
+    calculateStoreComparison(year, month) {
+        try {
+            if (!window.dataManager || !window.storeManager) {
+                console.warn('DataManager または StoreManager が利用できません');
+                return [];
+            }
+
+            const stores = window.storeManager.getAllStores();
+            const comparison = [];
+
+            stores.forEach(store => {
+                const storeData = window.dataManager.getRecordsByMonth(year, month, store.id);
+                
+                // 収入計算（売上）
+                const income = storeData.sales?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                
+                // 支出計算
+                const purchases = storeData.purchases?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                const fixedCosts = storeData.fixedCosts?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                const variableCosts = storeData.variableCosts?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                const laborCosts = storeData.laborCosts?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                const consumptionTax = storeData.consumptionTax?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                const monthlyPayments = storeData.monthlyPayments?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+                
+                const expense = purchases + fixedCosts + variableCosts + laborCosts + consumptionTax + monthlyPayments;
+                const balance = income - expense;
+
+                comparison.push({
+                    store: store,
+                    income: income,
+                    expense: expense,
+                    balance: balance,
+                    profitMargin: income > 0 ? ((balance / income) * 100) : 0
+                });
+            });
+
+            // 収益順でソート
+            comparison.sort((a, b) => b.balance - a.balance);
+
+            return comparison;
+        } catch (error) {
+            console.error('店舗比較計算エラー:', error);
+            return [];
+        }
+    }
 }
 
 // ChartManagerファイル読み込み確認
