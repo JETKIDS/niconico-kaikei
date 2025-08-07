@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上下幅調整テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+    <style>
+        .test-section {
+            margin: 1rem 0;
+            padding: 1rem;
+            border: 1px solid #d6c8b8;
+            border-radius: 8px;
+            background-color: #fdfaf5;
+        }
+        .test-title {
+            color: #8b0000;
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+        .test-description {
+            color: #4d3c2c;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        .spacing-demo {
+            border: 1px dashed #a09080;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            background-color: #f5f0e8;
+        }
+        .before-after {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .before, .after {
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        .before {
+            background-color: #ffe0e0;
+            border: 1px solid #d05050;
+        }
+        .after {
+            background-color: #e0ffe0;
+            border: 1px solid #408040;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>上下幅調整テスト</h1>
+            <div class="header-controls">
+                <div class="global-store-selector">
+                    <label>店舗:</label>
+                    <select>
+                        <option>本店</option>
+                        <option>支店A</option>
+                    </select>
+                </div>
+                <div class="global-date-selector">
+                    <label>期間:</label>
+                    <select>
+                        <option>2024年12月</option>
+                        <option>2024年11月</option>
+                    </select>
+                </div>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="#" class="nav-link">売上データ入力</a></li>
+                    <li><a href="#" class="nav-link">仕入データ入力</a></li>
+                    <li><a href="#" class="nav-link">固定費入力</a></li>
+                    <li><a href="#" class="nav-link">店舗管理</a></li>
+                    <li><a href="#" class="nav-link">収支レポート</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <div id="content-area">
+                <div class="test-section">
+                    <h2 class="test-title">1. ヘッダー部分の調整</h2>
+                    <p class="test-description">
+                        ヘッダーの高さとパディングを縮小しました。
+                    </p>
+                    <div class="before-after">
+                        <div class="before">
+                            <strong>修正前:</strong><br>
+                            - ヘッダーpadding: 1.5rem<br>
+                            - h1 margin-bottom: 1rem<br>
+                            - h1 font-size: 2.8rem
+                        </div>
+                        <div class="after">
+                            <strong>修正後:</strong><br>
+                            - ヘッダーpadding: 1rem<br>
+                            - h1 margin-bottom: 0.5rem<br>
+                            - h1 font-size: 2.2rem
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <h2>2. セクションヘッダーテスト</h2>
+                    <div class="section-controls">
+                        <button class="btn btn-primary">データ追加</button>
+                    </div>
+                </div>
+
+                <div class="test-section">
+                    <h3 class="test-title">フォーム要素のテスト</h3>
+                    <div class="form-container">
+                        <div class="form-group">
+                            <label for="test-input">テスト入力項目</label>
+                            <input type="text" id="test-input" placeholder="入力してください">
+                        </div>
+                        <div class="form-group">
+                            <label for="test-select">選択項目</label>
+                            <select id="test-select">
+                                <option>選択肢1</option>
+                                <option>選択肢2</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="test-textarea">備考</label>
+                            <textarea id="test-textarea" placeholder="備考を入力してください"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="test-section">
+                    <h3 class="test-title">テーブル表示テスト</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>項目1</th>
+                                <th>項目2</th>
+                                <th>項目3</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>データ1</td>
+                                <td>データ2</td>
+                                <td>データ3</td>
+                                <td>
+                                    <button class="btn btn-secondary">編集</button>
+                                    <button class="btn btn-danger">削除</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>データ4</td>
+                                <td>データ5</td>
+                                <td>データ6</td>
+                                <td>
+                                    <button class="btn btn-secondary">編集</button>
+                                    <button class="btn btn-danger">削除</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="monthly-report">
+                    <div class="report-header">
+                        <h3>月別レポートテスト</h3>
+                    </div>
+                    <div class="report-summary profit">
+                        <div class="summary-item">
+                            <span class="label">売上合計:</span>
+                            <span class="value income">¥1,000,000</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">費用合計:</span>
+                            <span class="value expense">¥800,000</span>
+                        </div>
+                        <div class="summary-item profit-item">
+                            <span class="label">利益:</span>
+                            <span class="value profit">¥200,000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="test-section">
+                    <h3 class="test-title">調整内容まとめ</h3>
+                    <div class="spacing-demo">
+                        <strong>主な調整項目:</strong>
+                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                            <li>body line-height: 1.8 → 1.5</li>
+                            <li>container margin: 20px → 10px</li>
+                            <li>header padding: 1.5rem → 1rem</li>
+                            <li>main padding: 2.5rem → 1.5rem</li>
+                            <li>content-area padding: 2rem → 1.5rem</li>
+                            <li>form-group margin-bottom: 1.8rem → 1.2rem</li>
+                            <li>section-header margin-bottom: 2.2rem → 1.5rem</li>
+                            <li>data-table th/td padding: 1rem → 0.7rem</li>
+                            <li>monthly-report padding: 2.2rem → 1.5rem</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="test-section">
+                    <h3 class="test-title">モーダルテスト</h3>
+                    <button class="btn btn-primary" onclick="showTestModal()">モーダルを開く</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- テスト用モーダル -->
+    <div id="test-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="form-header">
+                <h3>テストモーダル</h3>
+                <button class="close-btn" onclick="hideTestModal()">&times;</button>
+            </div>
+            <div class="data-form">
+                <div class="form-group">
+                    <label for="modal-input">モーダル内入力項目</label>
+                    <input type="text" id="modal-input" placeholder="入力してください">
+                </div>
+                <div class="form-group">
+                    <label for="modal-textarea">備考</label>
+                    <textarea id="modal-textarea" placeholder="備考を入力してください"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="hideTestModal()">キャンセル</button>
+                    <button class="btn btn-primary">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTestModal() {
+            document.getElementById('test-modal').style.display = 'block';
+        }
+
+        function hideTestModal() {
+            document.getElementById('test-modal').style.display = 'none';
+        }
+
+        // 画面の高さ情報を表示
+        function updateScreenInfo() {
+            const screenHeight = window.innerHeight;
+            const containerHeight = document.querySelector('.container').offsetHeight;
+            const headerHeight = document.querySelector('header').offsetHeight;
+            const mainHeight = document.querySelector('main').offsetHeight;
+            
+            console.log('画面情報:');
+            console.log(`- 画面高さ: ${screenHeight}px`);
+            console.log(`- コンテナ高さ: ${containerHeight}px`);
+            console.log(`- ヘッダー高さ: ${headerHeight}px`);
+            console.log(`- メイン高さ: ${mainHeight}px`);
+            console.log(`- スクロール必要性: ${containerHeight > screenHeight ? 'あり' : 'なし'}`);
+        }
+
+        window.addEventListener('load', updateScreenInfo);
+        window.addEventListener('resize', updateScreenInfo);
+    </script>
+</body>
+</html>

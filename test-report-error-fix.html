@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>レポートエラー修正テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+    <style>
+        .test-section {
+            margin: 1rem 0;
+            padding: 1rem;
+            border: 1px solid #d6c8b8;
+            border-radius: 8px;
+            background-color: #fdfaf5;
+        }
+        .test-title {
+            color: #8b0000;
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+        .test-result {
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #e0ffe0;
+            border: 1px solid #408040;
+            color: #2d5a2d;
+        }
+        .error {
+            background-color: #ffe0e0;
+            border: 1px solid #d05050;
+            color: #8b0000;
+        }
+        .info {
+            background-color: #e0e0ff;
+            border: 1px solid #8080c0;
+            color: #404080;
+        }
+        .data-structure {
+            background-color: #f5f0e8;
+            border: 1px solid #d6c8b8;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>レポートエラー修正テスト</h1>
+        </header>
+
+        <main>
+            <div id="content-area">
+                <div class="test-section">
+                    <h2 class="test-title">1. StoreManagerメソッド確認</h2>
+                    <p>StoreManagerクラスの利用可能なメソッドを確認します。</p>
+                    <div id="store-manager-results"></div>
+                    <button class="btn btn-primary" onclick="checkStoreManagerMethods()">メソッド確認</button>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">2. データ構造確認</h2>
+                    <p>ChartManagerから返されるデータ構造を確認します。</p>
+                    <div id="data-structure-results"></div>
+                    <button class="btn btn-primary" onclick="checkDataStructure()">データ構造確認</button>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">3. 統合レポート計算テスト</h2>
+                    <p>修正された統合レポート計算をテストします。</p>
+                    <div id="consolidated-results"></div>
+                    <button class="btn btn-primary" onclick="testConsolidatedReport()">統合レポートテスト</button>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">4. 比較レポート計算テスト</h2>
+                    <p>修正された比較レポート計算をテストします。</p>
+                    <div id="comparison-results"></div>
+                    <button class="btn btn-primary" onclick="testComparisonReport()">比較レポートテスト</button>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">5. エラー修正確認</h2>
+                    <p>修正前に発生していたエラーが解消されているかを確認します。</p>
+                    <div id="error-check-results"></div>
+                    <button class="btn btn-primary" onclick="checkErrorFixes()">エラー修正確認</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 必要なスクリプトを読み込み -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="kaikei/js/data-manager.js"></script>
+    <script src="kaikei/js/store-manager.js"></script>
+    <script src="kaikei/js/chart-manager.js"></script>
+
+    <script>
+        let testDataManager, testStoreManager, testChartManager;
+
+        function addResult(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            container.appendChild(div);
+        }
+
+        function addDataStructure(containerId, data) {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = 'data-structure';
+            div.textContent = JSON.stringify(data, null, 2);
+            container.appendChild(div);
+        }
+
+        function clearResults(containerId) {
+            document.getElementById(containerId).innerHTML = '';
+        }
+
+        async function initializeTestEnvironment() {
+            try {
+                testDataManager = new DataManager();
+                testStoreManager = new StoreManager();
+                testChartManager = new ChartManager(testDataManager);
+
+                window.dataManager = testDataManager;
+                window.storeManager = testStoreManager;
+                window.chartManager = testChartManager;
+
+                await testStoreManager.loadStoreData();
+                await testDataManager.loadData();
+
+                // テスト用店舗を追加
+                if (testStoreManager.getStoreCount() === 0) {
+                    const store1 = testStoreManager.addStore({
+                        name: 'テスト本店',
+                        address: '東京都渋谷区',
+                        openDate: '2020-01-01',
+                        note: 'テスト用店舗'
+                    });
+                    
+                    const store2 = testStoreManager.addStore({
+                        name: 'テスト支店',
+                        address: '大阪府大阪市',
+                        openDate: '2021-06-01',
+                        note: 'テスト用支店'
+                    });
+
+                    testStoreManager.setActiveStore(store1.id);
+
+                    // テスト用データを追加
+                    testDataManager.addRecord('sales', {
+                        year: 2024,
+                        month: 12,
+                        amount: 1000000,
+                        note: 'テスト売上',
+                        storeId: store1.id
+                    });
+
+                    testDataManager.addRecord('purchases', {
+                        year: 2024,
+                        month: 12,
+                        amount: 600000,
+                        manufacturer: 'テストメーカー',
+                        note: 'テスト仕入',
+                        storeId: store1.id
+                    });
+
+                    testDataManager.addRecord('sales', {
+                        year: 2024,
+                        month: 12,
+                        amount: 800000,
+                        note: 'テスト売上',
+                        storeId: store2.id
+                    });
+
+                    testDataManager.addRecord('purchases', {
+                        year: 2024,
+                        month: 12,
+                        amount: 400000,
+                        manufacturer: 'テストメーカー',
+                        note: 'テスト仕入',
+                        storeId: store2.id
+                    });
+                }
+
+                return true;
+            } catch (error) {
+                console.error('テスト環境初期化エラー:', error);
+                return false;
+            }
+        }
+
+        function checkStoreManagerMethods() {
+            clearResults('store-manager-results');
+            
+            try {
+                if (typeof StoreManager === 'function') {
+                    addResult('store-manager-results', '✓ StoreManagerクラスが定義されています', 'success');
+                } else {
+                    addResult('store-manager-results', '❌ StoreManagerクラスが定義されていません', 'error');
+                    return;
+                }
+
+                const testStore = new StoreManager();
+                
+                // 利用可能なメソッドをチェック
+                const methods = [
+                    'getStores',
+                    'getAllStores',
+                    'getStoreById',
+                    'getActiveStore',
+                    'addStore',
+                    'updateStore',
+                    'deleteStore'
+                ];
+
+                methods.forEach(method => {
+                    if (typeof testStore[method] === 'function') {
+                        addResult('store-manager-results', `✓ ${method}メソッドが存在します`, 'success');
+                    } else {
+                        addResult('store-manager-results', `❌ ${method}メソッドが存在しません`, 'error');
+                    }
+                });
+
+            } catch (error) {
+                addResult('store-manager-results', `❌ エラー: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkDataStructure() {
+            clearResults('data-structure-results');
+            
+            try {
+                const initialized = await initializeTestEnvironment();
+                if (!initialized) {
+                    addResult('data-structure-results', '❌ テスト環境の初期化に失敗しました', 'error');
+                    return;
+                }
+
+                // 統合レポートのデータ構造を確認
+                const consolidatedData = testChartManager.calculateConsolidatedBalance(2024, 12);
+                addResult('data-structure-results', '統合レポートデータ構造:', 'info');
+                addDataStructure('data-structure-results', consolidatedData);
+
+                // 比較レポートのデータ構造を確認
+                const comparisonData = testChartManager.calculateStoreComparison(2024, 12);
+                addResult('data-structure-results', '比較レポートデータ構造:', 'info');
+                addDataStructure('data-structure-results', comparisonData);
+
+            } catch (error) {
+                addResult('data-structure-results', `❌ エラー: ${error.message}`, 'error');
+                console.error('データ構造確認エラー:', error);
+            }
+        }
+
+        async function testConsolidatedReport() {
+            clearResults('consolidated-results');
+            
+            try {
+                const initialized = await initializeTestEnvironment();
+                if (!initialized) {
+                    addResult('consolidated-results', '❌ テスト環境の初期化に失敗しました', 'error');
+                    return;
+                }
+
+                // 統合レポート計算
+                const consolidatedData = testChartManager.calculateConsolidatedBalance(2024, 12);
+                addResult('consolidated-results', '✓ 統合レポート計算が成功しました', 'success');
+                
+                // データの妥当性をチェック
+                if (typeof consolidatedData.totalIncome === 'number') {
+                    addResult('consolidated-results', `✓ totalIncome: ${consolidatedData.totalIncome.toLocaleString()}円`, 'success');
+                } else {
+                    addResult('consolidated-results', '❌ totalIncomeが数値ではありません', 'error');
+                }
+
+                if (typeof consolidatedData.totalExpense === 'number') {
+                    addResult('consolidated-results', `✓ totalExpense: ${consolidatedData.totalExpense.toLocaleString()}円`, 'success');
+                } else {
+                    addResult('consolidated-results', '❌ totalExpenseが数値ではありません', 'error');
+                }
+
+                if (typeof consolidatedData.balance === 'number') {
+                    addResult('consolidated-results', `✓ balance: ${consolidatedData.balance.toLocaleString()}円`, 'success');
+                } else {
+                    addResult('consolidated-results', '❌ balanceが数値ではありません', 'error');
+                }
+
+                if (Array.isArray(consolidatedData.stores)) {
+                    addResult('consolidated-results', `✓ stores配列: ${consolidatedData.stores.length}店舗`, 'success');
+                } else {
+                    addResult('consolidated-results', '❌ storesが配列ではありません', 'error');
+                }
+
+            } catch (error) {
+                addResult('consolidated-results', `❌ エラー: ${error.message}`, 'error');
+                console.error('統合レポートテストエラー:', error);
+            }
+        }
+
+        async function testComparisonReport() {
+            clearResults('comparison-results');
+            
+            try {
+                const initialized = await initializeTestEnvironment();
+                if (!initialized) {
+                    addResult('comparison-results', '❌ テスト環境の初期化に失敗しました', 'error');
+                    return;
+                }
+
+                // 比較レポート計算
+                const comparisonData = testChartManager.calculateStoreComparison(2024, 12);
+                addResult('comparison-results', '✓ 比較レポート計算が成功しました', 'success');
+                
+                if (Array.isArray(comparisonData)) {
+                    addResult('comparison-results', `✓ 比較データ配列: ${comparisonData.length}店舗`, 'success');
+                    
+                    comparisonData.forEach((store, index) => {
+                        if (store.store && store.store.name) {
+                            addResult('comparison-results', `✓ 店舗${index + 1}: ${store.store.name}`, 'success');
+                            
+                            if (typeof store.income === 'number') {
+                                addResult('comparison-results', `  - 収入: ${store.income.toLocaleString()}円`, 'info');
+                            }
+                            if (typeof store.expense === 'number') {
+                                addResult('comparison-results', `  - 支出: ${store.expense.toLocaleString()}円`, 'info');
+                            }
+                            if (typeof store.balance === 'number') {
+                                addResult('comparison-results', `  - 収支: ${store.balance.toLocaleString()}円`, 'info');
+                            }
+                        } else {
+                            addResult('comparison-results', `❌ 店舗${index + 1}: データ構造が不正`, 'error');
+                        }
+                    });
+                } else {
+                    addResult('comparison-results', '❌ 比較データが配列ではありません', 'error');
+                }
+
+            } catch (error) {
+                addResult('comparison-results', `❌ エラー: ${error.message}`, 'error');
+                console.error('比較レポートテストエラー:', error);
+            }
+        }
+
+        async function checkErrorFixes() {
+            clearResults('error-check-results');
+            
+            try {
+                const initialized = await initializeTestEnvironment();
+                if (!initialized) {
+                    addResult('error-check-results', '❌ テスト環境の初期化に失敗しました', 'error');
+                    return;
+                }
+
+                // 修正前のエラーを再現してみる
+                let errorCount = 0;
+
+                // 1. getAllStoresエラーの確認
+                try {
+                    const stores = window.storeManager.getStores();
+                    if (Array.isArray(stores)) {
+                        addResult('error-check-results', '✓ getStores()メソッドが正常に動作します', 'success');
+                    } else {
+                        addResult('error-check-results', '❌ getStores()が配列を返しません', 'error');
+                        errorCount++;
+                    }
+                } catch (error) {
+                    addResult('error-check-results', `❌ getStores()エラー: ${error.message}`, 'error');
+                    errorCount++;
+                }
+
+                // 2. 統合レポート計算エラーの確認
+                try {
+                    const consolidatedData = window.chartManager.calculateConsolidatedBalance(2024, 12);
+                    if (consolidatedData && typeof consolidatedData.totalIncome === 'number') {
+                        addResult('error-check-results', '✓ 統合レポート計算エラーが修正されました', 'success');
+                    } else {
+                        addResult('error-check-results', '❌ 統合レポート計算の戻り値が不正です', 'error');
+                        errorCount++;
+                    }
+                } catch (error) {
+                    addResult('error-check-results', `❌ 統合レポート計算エラー: ${error.message}`, 'error');
+                    errorCount++;
+                }
+
+                // 3. 比較レポート計算エラーの確認
+                try {
+                    const comparisonData = window.chartManager.calculateStoreComparison(2024, 12);
+                    if (Array.isArray(comparisonData)) {
+                        addResult('error-check-results', '✓ 比較レポート計算エラーが修正されました', 'success');
+                    } else {
+                        addResult('error-check-results', '❌ 比較レポート計算の戻り値が不正です', 'error');
+                        errorCount++;
+                    }
+                } catch (error) {
+                    addResult('error-check-results', `❌ 比較レポート計算エラー: ${error.message}`, 'error');
+                    errorCount++;
+                }
+
+                if (errorCount === 0) {
+                    addResult('error-check-results', '🎉 すべてのエラーが修正されました！', 'success');
+                } else {
+                    addResult('error-check-results', `⚠️ ${errorCount}個のエラーが残っています`, 'error');
+                }
+
+            } catch (error) {
+                addResult('error-check-results', `❌ エラー修正確認中にエラー: ${error.message}`, 'error');
+                console.error('エラー修正確認エラー:', error);
+            }
+        }
+
+        // ページ読み込み時に基本チェックを実行
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                checkStoreManagerMethods();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

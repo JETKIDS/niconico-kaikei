@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI/UX最適化テスト - もうかりまっか</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+    <style>
+        .test-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border: 2px solid #d6c8b8;
+            border-radius: 8px;
+            background-color: #fdfaf5;
+        }
+        .test-title {
+            color: #8b0000;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+        .test-description {
+            color: #4d3c2c;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        .test-demo {
+            background-color: #e8e0d0;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+        .test-button {
+            margin: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>UI/UX最適化テスト</h1>
+            <div class="header-controls">
+                <div id="save-status" class="save-status status-ready">
+                    <span id="save-status-text">テスト準備完了</span>
+                    <span id="save-status-icon" class="save-status-icon">✓</span>
+                </div>
+                <div class="global-store-selector">
+                    <label for="test-store">店舗:</label>
+                    <select id="test-store">
+                        <option value="store1">本店</option>
+                        <option value="store2">支店A</option>
+                        <option value="store3">支店B</option>
+                    </select>
+                </div>
+                <div class="global-date-selector">
+                    <label for="test-year">表示年:</label>
+                    <select id="test-year">
+                        <option value="2024">2024年</option>
+                        <option value="2023">2023年</option>
+                    </select>
+                    <label for="test-month">表示月:</label>
+                    <select id="test-month">
+                        <option value="1">1月</option>
+                        <option value="2">2月</option>
+                        <option value="3">3月</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div id="content-area">
+                <div class="test-section">
+                    <h2 class="test-title">1. レスポンシブデザインテスト</h2>
+                    <p class="test-description">
+                        ブラウザのウィンドウサイズを変更して、レスポンシブデザインの動作を確認してください。
+                        768px以下でモバイル表示、480px以下で小画面表示に切り替わります。
+                    </p>
+                    <div class="test-demo">
+                        <div class="section-header">
+                            <h3>テストセクション</h3>
+                            <div class="section-controls">
+                                <button class="btn">新規追加</button>
+                                <button class="btn btn-secondary">一括登録</button>
+                            </div>
+                        </div>
+                        <div class="data-move-controls">
+                            <div class="selection-controls">
+                                <button class="btn btn-secondary">全選択</button>
+                                <button class="btn btn-secondary">選択解除</button>
+                                <button class="btn btn-primary">選択したデータを移動</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">2. ローディング表示テスト</h2>
+                    <p class="test-description">
+                        各種ローディング表示のテストです。ボタンをクリックして動作を確認してください。
+                    </p>
+                    <div class="test-demo">
+                        <button class="btn test-button" onclick="testLoading()">ローディング表示テスト</button>
+                        <button class="btn test-button" onclick="testStoreSwitching()">店舗切り替えローディング</button>
+                        <div id="test-content" style="height: 100px; background: #f0f0f0; margin: 1rem 0; display: flex; align-items: center; justify-content: center;">
+                            テストコンテンツエリア
+                        </div>
+                    </div>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">3. エラーメッセージとユーザーガイダンステスト</h2>
+                    <p class="test-description">
+                        改善されたエラーメッセージとユーザーガイダンスの表示テストです。
+                    </p>
+                    <div class="test-demo">
+                        <button class="btn test-button" onclick="testErrorDialog()">エラーダイアログ表示</button>
+                        <button class="btn test-button" onclick="testStoreNotSelected()">店舗未選択エラー</button>
+                        <button class="btn test-button" onclick="testToastNotification()">トースト通知テスト</button>
+                        
+                        <div class="user-guidance">
+                            <h4>💡 ユーザーガイダンス例</h4>
+                            <p>このような形でユーザーに分かりやすい説明を提供します。</p>
+                            <ul>
+                                <li>手順1: まず店舗を選択してください</li>
+                                <li>手順2: データを入力してください</li>
+                                <li>手順3: 保存ボタンをクリックしてください</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">4. パフォーマンス最適化テスト</h2>
+                    <p class="test-description">
+                        大量データ対応と仮想スクロールのテストです。
+                    </p>
+                    <div class="test-demo">
+                        <button class="btn test-button" onclick="testVirtualScroll()">仮想スクロールテスト</button>
+                        <button class="btn test-button" onclick="testPerformanceMonitor()">パフォーマンス監視テスト</button>
+                        
+                        <div class="search-controls" style="margin: 1rem 0;">
+                            <input type="text" class="search-input" placeholder="データを検索..." onkeyup="testSearch(this.value)">
+                            <span class="search-results-count">100件中100件表示</span>
+                        </div>
+                        
+                        <div class="virtual-scroll-container" style="height: 200px;">
+                            <div class="virtual-scroll-content" id="test-virtual-content">
+                                <!-- 仮想スクロールコンテンツ -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // テスト用のJavaScript関数
+        function testLoading() {
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.innerHTML = `
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">データを読み込み中...</div>
+                    <div class="loading-subtext">しばらくお待ちください</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            
+            setTimeout(() => {
+                overlay.remove();
+            }, 3000);
+        }
+
+        function testStoreSwitching() {
+            const testContent = document.getElementById('test-content');
+            testContent.classList.add('store-switching-loader');
+            
+            setTimeout(() => {
+                testContent.classList.remove('store-switching-loader');
+            }, 2000);
+        }
+
+        function testErrorDialog() {
+            const modalHTML = `
+                <div class="modal-overlay" id="test-error-modal">
+                    <div class="modal-content error-dialog">
+                        <div class="modal-header">
+                            <h3>❌ テストエラー</h3>
+                            <button class="close-btn" onclick="document.getElementById('test-error-modal').remove()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="error-message">これはテスト用のエラーメッセージです。</p>
+                            <div class="error-details">
+                                <h4>詳細情報:</h4>
+                                <p><strong>エラーコード:</strong> TEST_ERROR_001</p>
+                                <p><strong>発生時刻:</strong> ${new Date().toLocaleString()}</p>
+                            </div>
+                            <div class="user-guidance">
+                                <h4>推奨される対処法:</h4>
+                                <ul>
+                                    <li>ページを再読み込みしてみてください</li>
+                                    <li>ブラウザのキャッシュをクリアしてください</li>
+                                    <li>問題が続く場合は、管理者にお問い合わせください</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" onclick="alert('再試行しました')">再試行</button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('test-error-modal').remove()">閉じる</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function testStoreNotSelected() {
+            const modalHTML = `
+                <div class="modal-overlay" id="test-store-modal">
+                    <div class="modal-content error-dialog">
+                        <div class="modal-header">
+                            <h3>⚠️ 店舗が選択されていません</h3>
+                            <button class="close-btn" onclick="document.getElementById('test-store-modal').remove()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="error-message">売上データを入力するには、まず店舗を選択する必要があります。</p>
+                            <div class="error-details">
+                                <p><strong>登録済み店舗数:</strong> 3店舗</p>
+                                <p><strong>操作方法:</strong></p>
+                                <ol>
+                                    <li>画面上部のヘッダーにある店舗選択ドロップダウンをクリック</li>
+                                    <li>データを入力したい店舗を選択</li>
+                                    <li>再度データ入力を行ってください</li>
+                                </ol>
+                            </div>
+                            <div class="user-guidance">
+                                <h4>💡 ヒント:</h4>
+                                <p>店舗を選択すると、その店舗専用のデータ入力・管理ができるようになります。</p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" onclick="alert('店舗選択画面へ移動')">店舗選択画面へ</button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('test-store-modal').remove()">閉じる</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function testToastNotification() {
+            if (!document.querySelector('.toast-container')) {
+                const container = document.createElement('div');
+                container.className = 'toast-container';
+                document.body.appendChild(container);
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast success';
+            toast.innerHTML = `
+                <div class="toast-header">
+                    <div class="toast-title">成功</div>
+                    <button class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+                </div>
+                <div class="toast-body">テスト通知が正常に表示されました！</div>
+            `;
+            
+            document.querySelector('.toast-container').appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        function testVirtualScroll() {
+            const content = document.getElementById('test-virtual-content');
+            let html = '<table class="data-table large-data-table"><thead><tr><th>ID</th><th>データ</th><th>値</th></tr></thead><tbody>';
+            
+            for (let i = 1; i <= 1000; i++) {
+                html += `<tr><td>${i}</td><td>テストデータ${i}</td><td>${Math.floor(Math.random() * 10000)}</td></tr>`;
+            }
+            
+            html += '</tbody></table>';
+            content.innerHTML = html;
+        }
+
+        function testPerformanceMonitor() {
+            const indicator = document.createElement('div');
+            indicator.className = 'performance-indicator show';
+            indicator.textContent = 'render: 45.2ms';
+            document.body.appendChild(indicator);
+            
+            setTimeout(() => {
+                indicator.textContent = 'load: 123.4ms';
+            }, 2000);
+            
+            setTimeout(() => {
+                indicator.remove();
+            }, 4000);
+        }
+
+        function testSearch(value) {
+            const resultCount = document.querySelector('.search-results-count');
+            const filtered = Math.floor(Math.random() * 100);
+            resultCount.textContent = `100件中${filtered}件表示`;
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('UI/UX最適化テストページが読み込まれました');
+            
+            // レスポンシブテスト用の情報表示
+            function updateScreenInfo() {
+                const width = window.innerWidth;
+                let screenType = 'デスクトップ';
+                if (width <= 480) screenType = '小画面';
+                else if (width <= 768) screenType = 'タブレット';
+                
+                console.log(`画面幅: ${width}px (${screenType})`);
+            }
+            
+            window.addEventListener('resize', updateScreenInfo);
+            updateScreenInfo();
+        });
+    </script>
+</body>
+</html>

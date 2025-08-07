@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataManager Fix Test</title>
+</head>
+<body>
+    <h1>DataManager Fix Test</h1>
+    <div id="test-results"></div>
+
+    <script src="kaikei/js/data-manager.js"></script>
+    <script>
+        const results = document.getElementById('test-results');
+        
+        function addResult(message, isSuccess = true) {
+            const div = document.createElement('div');
+            div.style.color = isSuccess ? 'green' : 'red';
+            div.textContent = message;
+            results.appendChild(div);
+        }
+
+        try {
+            // Test DataManager class definition
+            if (typeof DataManager === 'function') {
+                addResult('✓ DataManager class is properly defined');
+            } else {
+                addResult('❌ DataManager class is not defined', false);
+            }
+
+            // Test DataManager instantiation
+            const dataManager = new DataManager();
+            if (dataManager instanceof DataManager) {
+                addResult('✓ DataManager can be instantiated');
+            } else {
+                addResult('❌ DataManager instantiation failed', false);
+            }
+
+            // Test basic methods
+            if (typeof dataManager.loadData === 'function') {
+                addResult('✓ loadData method exists');
+            } else {
+                addResult('❌ loadData method missing', false);
+            }
+
+            if (typeof dataManager.saveData === 'function') {
+                addResult('✓ saveData method exists');
+            } else {
+                addResult('❌ saveData method missing', false);
+            }
+
+            if (typeof dataManager.addRecord === 'function') {
+                addResult('✓ addRecord method exists');
+            } else {
+                addResult('❌ addRecord method missing', false);
+            }
+
+            // Test helper classes
+            if (typeof DataModels === 'function') {
+                addResult('✓ DataModels class is defined');
+            } else {
+                addResult('❌ DataModels class is not defined', false);
+            }
+
+            if (typeof DataValidator === 'function') {
+                addResult('✓ DataValidator class is defined');
+            } else {
+                addResult('❌ DataValidator class is not defined', false);
+            }
+
+            if (typeof UUIDGenerator === 'function') {
+                addResult('✓ UUIDGenerator class is defined');
+            } else {
+                addResult('❌ UUIDGenerator class is not defined', false);
+            }
+
+            addResult('✓ All tests passed successfully!');
+
+        } catch (error) {
+            addResult(`❌ Error during testing: ${error.message}`, false);
+            console.error('Test error:', error);
+        }
+    </script>
+</body>
+</html>

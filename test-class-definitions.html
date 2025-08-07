@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>クラス定義テスト</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>クラス定義テスト</h1>
+    <div id="test-results"></div>
+
+    <!-- スクリプトを順番に読み込み -->
+    <script src="kaikei/js/data-manager.js" onload="console.log('✓ data-manager.js loaded successfully')"
+        onerror="console.error('❌ data-manager.js failed to load')"></script>
+    <script src="kaikei/js/store-manager.js" onload="console.log('✓ store-manager.js loaded successfully')"
+        onerror="console.error('❌ store-manager.js failed to load')"></script>
+    <script src="kaikei/js/ui-manager.js" onload="console.log('✓ ui-manager.js loaded successfully')"
+        onerror="console.error('❌ ui-manager.js failed to load')"></script>
+    <script src="kaikei/js/chart-manager.js" onload="console.log('✓ chart-manager.js loaded successfully')"
+        onerror="console.error('❌ chart-manager.js failed to load')"></script>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('test-results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function testClassDefinition(className, classRef) {
+            try {
+                if (typeof classRef === 'undefined') {
+                    addResult(`❌ ${className}: 未定義`, 'error');
+                    return false;
+                } else if (typeof classRef === 'function') {
+                    addResult(`✅ ${className}: 正常に定義されています`, 'success');
+
+                    // コンストラクタのテスト
+                    try {
+                        if (className === 'DataManager') {
+                            const instance = new classRef();
+                            addResult(`✅ ${className}: インスタンス作成成功`, 'success');
+                        } else if (className === 'StoreManager') {
+                            const instance = new classRef();
+                            addResult(`✅ ${className}: インスタンス作成成功`, 'success');
+                        } else if (className === 'ChartManager') {
+                            // ChartManagerはDataManagerが必要
+                            const dataManager = new DataManager();
+                            const instance = new classRef(dataManager);
+                            addResult(`✅ ${className}: インスタンス作成成功`, 'success');
+                        } else if (className === 'UIManager') {
+                            // UIManagerはDataManagerが必要
+                            const dataManager = new DataManager();
+                            const instance = new classRef(dataManager);
+                            addResult(`✅ ${className}: インスタンス作成成功`, 'success');
+                        }
+                    } catch (constructorError) {
+                        addResult(`⚠️ ${className}: インスタンス作成エラー - ${constructorError.message}`, 'error');
+                    }
+
+                    return true;
+                } else {
+                    addResult(`❌ ${className}: 関数ではありません (type: ${typeof classRef})`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                addResult(`❌ ${className}: テスト中にエラー - ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // テスト実行
+        document.addEventListener('DOMContentLoaded', function () {
+            addResult('<h2>クラス定義テスト開始</h2>', 'info');
+
+            const classes = {
+                'DataModels': typeof DataModels !== 'undefined' ? DataModels : undefined,
+                'DataValidator': typeof DataValidator !== 'undefined' ? DataValidator : undefined,
+                'UUIDGenerator': typeof UUIDGenerator !== 'undefined' ? UUIDGenerator : undefined,
+                'DataManager': typeof DataManager !== 'undefined' ? DataManager : undefined,
+                'StoreUUIDGenerator': typeof StoreUUIDGenerator !== 'undefined' ? StoreUUIDGenerator : undefined,
+                'StoreModels': typeof StoreModels !== 'undefined' ? StoreModels : undefined,
+                'StoreValidator': typeof StoreValidator !== 'undefined' ? StoreValidator : undefined,
+                'StoreManager': typeof StoreManager !== 'undefined' ? StoreManager : undefined,
+                'LoadingManager': typeof LoadingManager !== 'undefined' ? LoadingManager : undefined,
+                'ToastManager': typeof ToastManager !== 'undefined' ? ToastManager : undefined,
+                'PerformanceMonitor': typeof PerformanceMonitor !== 'undefined' ? PerformanceMonitor : undefined,
+                'UIManager': typeof UIManager !== 'undefined' ? UIManager : undefined,
+                'ChartManager': typeof ChartManager !== 'undefined' ? ChartManager : undefined
+            };
+
+            let successCount = 0;
+            let totalCount = 0;
+
+            for (const [className, classRef] of Object.entries(classes)) {
+                totalCount++;
+                if (testClassDefinition(className, classRef)) {
+                    successCount++;
+                }
+            }
+
+            addResult(`<h2>テスト結果: ${successCount}/${totalCount} クラスが正常</h2>`,
+                successCount === totalCount ? 'success' : 'error');
+
+            // グローバル変数の確認
+            addResult('<h2>グローバル変数確認</h2>', 'info');
+            const globalVars = ['window', 'document', 'console', 'localStorage'];
+            globalVars.forEach(varName => {
+                if (typeof window[varName] !== 'undefined') {
+                    addResult(`✅ ${varName}: 利用可能`, 'success');
+                } else {
+                    addResult(`❌ ${varName}: 利用不可`, 'error');
+                }
+            });
+
+            // スクリプト読み込み状況の確認
+            addResult('<h2>スクリプト読み込み状況</h2>', 'info');
+            if (window.scriptLoadStatus) {
+                for (const [script, loaded] of Object.entries(window.scriptLoadStatus)) {
+                    addResult(`${loaded ? '✅' : '❌'} ${script}: ${loaded ? '読み込み済み' : '未読み込み'}`,
+                        loaded ? 'success' : 'error');
+                }
+            } else {
+                addResult('スクリプト読み込み状況が追跡されていません', 'info');
+            }
+        });
+    </script>
+</body>
+
+</html>
