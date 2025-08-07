@@ -3228,24 +3228,34 @@ class UIManager {
      * 統合レポートHTML生成
      */
     generateConsolidatedReportHTML(consolidatedData) {
-        const { year, month, sales, totalExpenses, profit, isDeficit, profitMargin, storeCount } = consolidatedData;
+        const totalIncome = consolidatedData.totalIncome || 0;
+        const totalExpense = consolidatedData.totalExpense || 0;
+        const balance = consolidatedData.balance || 0;
+        const stores = consolidatedData.stores || [];
+        const isDeficit = balance < 0;
+        const profitMargin = totalIncome > 0 ? ((balance / totalIncome) * 100) : 0;
+        
+        // 現在の年月を取得（引数から取得できない場合は現在の日付を使用）
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
         
         let html = `
             <div class="consolidated-report">
                 <div class="report-header">
-                    <h3>${year}年${month}月の全店舗統合レポート（${storeCount}店舗）</h3>
+                    <h3>${year}年${month}月の全店舗統合レポート（${stores.length}店舗）</h3>
                     <div class="report-summary ${isDeficit ? 'deficit' : 'profit'}">
                         <div class="summary-item">
                             <span class="label">統合売上:</span>
-                            <span class="value income">${sales.toLocaleString()}円</span>
+                            <span class="value income">${totalIncome.toLocaleString()}円</span>
                         </div>
                         <div class="summary-item">
                             <span class="label">統合支出:</span>
-                            <span class="value expense">${totalExpenses.toLocaleString()}円</span>
+                            <span class="value expense">${totalExpense.toLocaleString()}円</span>
                         </div>
                         <div class="summary-item profit-item">
                             <span class="label">統合${isDeficit ? '赤字:' : '利益:'}</span>
-                            <span class="value ${isDeficit ? 'deficit' : 'profit'}">${Math.abs(profit).toLocaleString()}円</span>
+                            <span class="value ${isDeficit ? 'deficit' : 'profit'}">${Math.abs(balance).toLocaleString()}円</span>
                         </div>
                         <div class="summary-item">
                             <span class="label">利益率:</span>
@@ -3316,13 +3326,13 @@ class UIManager {
                             <tr class="comparison-row ${rankClass}">
                                 <td class="rank">${rank}</td>
                                 <td class="store-name">${storeData.store.name}</td>
-                                <td class="amount income">${storeData.totalSales.toLocaleString()}円</td>
-                                <td class="amount expense">${storeData.totalExpenses.toLocaleString()}円</td>
-                                <td class="amount ${storeData.isDeficit ? 'deficit' : 'profit'}">${Math.abs(storeData.profit).toLocaleString()}円</td>
+                                <td class="amount income">${storeData.income.toLocaleString()}円</td>
+                                <td class="amount expense">${storeData.expense.toLocaleString()}円</td>
+                                <td class="amount ${storeData.balance < 0 ? 'deficit' : 'profit'}">${Math.abs(storeData.balance).toLocaleString()}円</td>
                                 <td class="percentage">${storeData.profitMargin.toFixed(1)}%</td>
                                 <td class="status">
-                                    <span class="status-badge ${storeData.isDeficit ? 'status-deficit' : 'status-profit'}">
-                                        ${storeData.isDeficit ? '赤字' : '黒字'}
+                                    <span class="status-badge ${storeData.balance < 0 ? 'status-deficit' : 'status-profit'}">
+                                        ${storeData.balance < 0 ? '赤字' : '黒字'}
                                     </span>
                                 </td>
                             </tr>

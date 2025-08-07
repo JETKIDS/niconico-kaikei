@@ -288,7 +288,7 @@ class ChartManager {
                 };
             }
 
-            const stores = window.storeManager.getAllStores();
+            const stores = window.storeManager.getStores();
             const storeBalances = [];
             let totalIncome = 0;
             let totalExpense = 0;
@@ -348,7 +348,7 @@ class ChartManager {
                 return [];
             }
 
-            const stores = window.storeManager.getAllStores();
+            const stores = window.storeManager.getStores();
             const comparison = [];
 
             stores.forEach(store => {
