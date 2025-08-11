@@ -1719,6 +1719,14 @@ class UIManager {
     showDataManagement(title, category) {
         let data = this.dataManager.getDataByCategory(category);
         
+        // アクティブ店舗フィルターを適用
+        if (window.storeManager) {
+            const activeStoreId = window.storeManager.getActiveStoreId();
+            if (activeStoreId) {
+                data = data.filter(record => record.storeId === activeStoreId);
+            }
+        }
+        
         // グローバル日付フィルターを適用
         if (window.app) {
             const globalDate = window.app.getGlobalDate();

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>店舗切り替え修正テスト</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { margin: 5px; padding: 10px; }
+        .store-info { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+        .data-display { background: #f9f9f9; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>店舗切り替え時の売上データ表示修正テスト</h1>
+    
+    <div class="test-section">
+        <h2>テスト環境セットアップ</h2>
+        <button onclick="setupTestData()">テストデータ作成</button>
+        <button onclick="clearTestData()">データクリア</button>
+        <div id="setup-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>店舗管理</h2>
+        <div id="store-list"></div>
+        <button onclick="createTestStores()">テスト店舗作成</button>
+        <button onclick="refreshStoreList()">店舗リスト更新</button>
+    </div>
+
+    <div class="test-section">
+        <h2>店舗切り替えテスト</h2>
+        <div class="store-info">
+            <strong>現在のアクティブ店舗:</strong> <span id="current-store">未設定</span>
+        </div>
+        <div>
+            <label for="store-selector">店舗選択:</label>
+            <select id="store-selector" onchange="switchStore()">
+                <option value="">店舗を選択してください</option>
+            </select>
+        </div>
+        <div class="data-display">
+            <h3>売上データ (2024年1月)</h3>
+            <div id="sales-data">データなし</div>
+        </div>
+        <div class="data-display">
+            <h3>仕入れデータ (2024年1月)</h3>
+            <div id="purchases-data">データなし</div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>テスト結果</h2>
+        <div id="test-results"></div>
+        <button onclick="runAllTests()">全テスト実行</button>
+    </div>
+
+    <script src="kaikei/js/version.js"></script>
+    <script src="kaikei/js/version-utils.js"></script>
+    <script src="kaikei/js/data-manager.js"></script>
+    <script src="kaikei/js/store-manager.js"></script>
+    <script src="kaikei/js/ui-manager.js"></script>
+    <script src="kaikei/js/chart-manager.js"></script>
+    <script src="kaikei/js/app.js"></script>
+
+    <script>
+        let testDataManager, testStoreManager, testUIManager;
+        let testResults = [];
+
+        // テスト用のグローバル変数設定
+        window.app = {
+            getGlobalDate: () => ({ year: 2024, month: 1 })
+        };
+
+        function initializeManagers() {
+            try {
+                testDataManager = new DataManager();
+                testStoreManager = new StoreManager();
+                testUIManager = new UIManager(testDataManager);
+                
+                // グローバル変数として設定
+                window.dataManager = testDataManager;
+                window.storeManager = testStoreManager;
+                window.uiManager = testUIManager;
+                
+                return true;
+            } catch (error) {
+                console.error('マネージャー初期化エラー:', error);
+                return false;
+            }
+        }
+
+        async function setupTestData() {
+            const statusDiv = document.getElementById('setup-status');
+            
+            try {
+                statusDiv.innerHTML = '<div class="info">セットアップ中...</div>';
+                
+                if (!initializeManagers()) {
+                    throw new Error('マネージャーの初期化に失敗しました');
+                }
+                
+                await testDataManager.loadData();
+                await testStoreManager.loadStoreData();
+                
+                statusDiv.innerHTML = '<div class="success">✓ セットアップ完了</div>';
+                refreshStoreList();
+                updateCurrentStore();
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">✗ セットアップエラー: ${error.message}</div>`;
+            }
+        }
+
+        async function createTestStores() {
+            try {
+                // テスト店舗を作成
+                const stores = [
+                    { name: '本店', address: '東京都渋谷区', note: 'メイン店舗' },
+                    { name: '支店A', address: '東京都新宿区', note: '支店A' },
+                    { name: '支店B', address: '東京都池袋区', note: '支店B' }
+                ];
+                
+                for (const storeData of stores) {
+                    try {
+                        testStoreManager.addStore(storeData);
+                    } catch (error) {
+                        if (!error.message.includes('同じ名前の店舗')) {
+                            throw error;
+                        }
+                    }
+                }
+                
+                // 各店舗にテストデータを追加
+                const storeList = testStoreManager.getStores();
+                for (let i = 0; i < storeList.length; i++) {
+                    const store = storeList[i];
+                    
+                    // 売上データ
+                    testDataManager.addRecord('sales', {
+                        year: 2024,
+                        month: 1,
+                        amount: (i + 1) * 100000,
+                        note: `${store.name}の売上`,
+                        storeId: store.id
+                    });
+                    
+                    // 仕入れデータ
+                    testDataManager.addRecord('purchases', {
+                        year: 2024,
+                        month: 1,
+                        amount: (i + 1) * 50000,
+                        manufacturer: 'テストメーカー',
+                        note: `${store.name}の仕入れ`,
+                        storeId: store.id
+                    });
+                }
+                
+                refreshStoreList();
+                updateCurrentStore();
+                updateDataDisplay();
+                
+                document.getElementById('setup-status').innerHTML = 
+                    '<div class="success">✓ テスト店舗とデータを作成しました</div>';
+                
+            } catch (error) {
+                document.getElementById('setup-status').innerHTML = 
+                    `<div class="error">✗ テスト店舗作成エラー: ${error.message}</div>`;
+            }
+        }
+
+        function refreshStoreList() {
+            if (!testStoreManager) return;
+            
+            const storeListDiv = document.getElementById('store-list');
+            const storeSelector = document.getElementById('store-selector');
+            
+            const stores = testStoreManager.getStores();
+            const activeStoreId = testStoreManager.getActiveStoreId();
+            
+            // 店舗リスト表示
+            let listHTML = '<h3>登録店舗一覧</h3>';
+            stores.forEach(store => {
+                const isActive = store.id === activeStoreId;
+                listHTML += `
+                    <div style="margin: 5px 0; padding: 5px; background: ${isActive ? '#e8f5e8' : '#f5f5f5'}">
+                        <strong>${store.name}</strong> ${isActive ? '(アクティブ)' : ''}
+                        <br><small>${store.address || '住所未設定'}</small>
+                    </div>
+                `;
+            });
+            storeListDiv.innerHTML = listHTML;
+            
+            // セレクター更新
+            storeSelector.innerHTML = '<option value="">店舗を選択してください</option>';
+            stores.forEach(store => {
+                const option = document.createElement('option');
+                option.value = store.id;
+                option.textContent = store.name;
+                option.selected = store.id === activeStoreId;
+                storeSelector.appendChild(option);
+            });
+        }
+
+        function updateCurrentStore() {
+            if (!testStoreManager) return;
+            
+            const activeStore = testStoreManager.getActiveStore();
+            const currentStoreSpan = document.getElementById('current-store');
+            
+            if (activeStore) {
+                currentStoreSpan.textContent = activeStore.name;
+                currentStoreSpan.className = 'success';
+            } else {
+                currentStoreSpan.textContent = '未設定';
+                currentStoreSpan.className = 'error';
+            }
+        }
+
+        function switchStore() {
+            const storeSelector = document.getElementById('store-selector');
+            const newStoreId = storeSelector.value;
+            
+            if (!newStoreId || !testStoreManager) return;
+            
+            try {
+                testStoreManager.setActiveStore(newStoreId);
+                updateCurrentStore();
+                updateDataDisplay();
+                
+                // テスト結果に記録
+                const store = testStoreManager.getStoreById(newStoreId);
+                addTestResult(`店舗切り替え成功: ${store.name}`, 'success');
+                
+            } catch (error) {
+                addTestResult(`店舗切り替えエラー: ${error.message}`, 'error');
+            }
+        }
+
+        function updateDataDisplay() {
+            if (!testDataManager || !testStoreManager) return;
+            
+            const activeStoreId = testStoreManager.getActiveStoreId();
+            if (!activeStoreId) return;
+            
+            // 売上データ表示
+            const salesData = testDataManager.getDataByCategory('sales')
+                .filter(record => record.storeId === activeStoreId && record.year === 2024 && record.month === 1);
+            
+            const salesDiv = document.getElementById('sales-data');
+            if (salesData.length > 0) {
+                salesDiv.innerHTML = salesData.map(record => 
+                    `<div>金額: ${record.amount.toLocaleString()}円 - ${record.note}</div>`
+                ).join('');
+            } else {
+                salesDiv.innerHTML = 'データなし';
+            }
+            
+            // 仕入れデータ表示
+            const purchasesData = testDataManager.getDataByCategory('purchases')
+                .filter(record => record.storeId === activeStoreId && record.year === 2024 && record.month === 1);
+            
+            const purchasesDiv = document.getElementById('purchases-data');
+            if (purchasesData.length > 0) {
+                purchasesDiv.innerHTML = purchasesData.map(record => 
+                    `<div>金額: ${record.amount.toLocaleString()}円 - ${record.note}</div>`
+                ).join('');
+            } else {
+                purchasesDiv.innerHTML = 'データなし';
+            }
+        }
+
+        function addTestResult(message, type) {
+            testResults.push({ message, type, timestamp: new Date() });
+            updateTestResults();
+        }
+
+        function updateTestResults() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = testResults.map(result => 
+                `<div class="${result.type}">${result.timestamp.toLocaleTimeString()}: ${result.message}</div>`
+            ).join('');
+        }
+
+        async function runAllTests() {
+            testResults = [];
+            addTestResult('テスト開始', 'info');
+            
+            try {
+                // 1. 初期化テスト
+                if (initializeManagers()) {
+                    addTestResult('✓ マネージャー初期化成功', 'success');
+                } else {
+                    addTestResult('✗ マネージャー初期化失敗', 'error');
+                    return;
+                }
+                
+                await testDataManager.loadData();
+                await testStoreManager.loadStoreData();
+                addTestResult('✓ データ読み込み成功', 'success');
+                
+                // 2. 店舗切り替えテスト
+                const stores = testStoreManager.getStores();
+                if (stores.length >= 2) {
+                    for (let i = 0; i < Math.min(2, stores.length); i++) {
+                        const store = stores[i];
+                        testStoreManager.setActiveStore(store.id);
+                        
+                        // データフィルタリングテスト
+                        const salesData = testDataManager.getDataByCategory('sales')
+                            .filter(record => record.storeId === store.id);
+                        
+                        addTestResult(`✓ ${store.name}: 売上データ ${salesData.length}件取得`, 'success');
+                    }
+                } else {
+                    addTestResult('✗ テスト用店舗が不足しています', 'error');
+                }
+                
+                // 3. UIManager統合テスト
+                if (testUIManager && testUIManager.showDataManagement) {
+                    addTestResult('✓ UIManager統合確認', 'success');
+                } else {
+                    addTestResult('✗ UIManager統合失敗', 'error');
+                }
+                
+                addTestResult('テスト完了', 'info');
+                
+            } catch (error) {
+                addTestResult(`✗ テストエラー: ${error.message}`, 'error');
+            }
+        }
+
+        function clearTestData() {
+            localStorage.removeItem('kaikei-data');
+            localStorage.removeItem('kaikei-stores');
+            document.getElementById('setup-status').innerHTML = '<div class="info">データをクリアしました</div>';
+            location.reload();
+        }
+
+        // ページ読み込み時の初期化
+        window.addEventListener('load', () => {
+            console.log('店舗切り替え修正テストページ読み込み完了');
+        });
+    </script>
+</body>
+</html>
