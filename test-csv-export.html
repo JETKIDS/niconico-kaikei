@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSVエクスポート機能テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CSVエクスポート機能テスト</h1>
+        </header>
+        
+        <main>
+            <div id="content-area">
+                <h2>CSVエクスポート機能のテスト</h2>
+                
+                <div class="test-section">
+                    <h3>テストデータ作成</h3>
+                    <button class="btn btn-primary" onclick="createTestData()">テストデータを作成</button>
+                    <div id="test-data-status"></div>
+                </div>
+                
+                <div class="test-section">
+                    <h3>CSVエクスポートテスト</h3>
+                    <div class="export-controls">
+                        <button class="btn btn-secondary" onclick="testMonthlyExport()">月別エクスポート</button>
+                        <button class="btn btn-secondary" onclick="testYearlyExport()">年別エクスポート</button>
+                        <button class="btn btn-secondary" onclick="testRangeExport()">期間指定エクスポート</button>
+                        <button class="btn btn-secondary" onclick="testAllDataExport()">全データエクスポート</button>
+                    </div>
+                </div>
+                
+                <div class="test-section">
+                    <h3>テスト結果</h3>
+                    <div id="test-results"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="kaikei/js/data-manager.js"></script>
+    <script>
+        let dataManager;
+        
+        // データマネージャー初期化
+        async function initDataManager() {
+            dataManager = new DataManager();
+            await dataManager.loadData();
+        }
+        
+        // テストデータ作成
+        async function createTestData() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth() + 1;
+                
+                // 売上データ
+                dataManager.addRecord('sales', {
+                    year: currentYear,
+                    month: currentMonth,
+                    amount: 500000,
+                    note: 'テスト売上データ'
+                });
+                
+                // 仕入れデータ
+                dataManager.addRecord('purchases', {
+                    year: currentYear,
+                    month: currentMonth,
+                    amount: 200000,
+                    note: 'テスト仕入れデータ'
+                });
+                
+                // 固定費データ
+                dataManager.addRecord('fixedCosts', {
+                    year: currentYear,
+                    month: currentMonth,
+                    category: '家賃',
+                    amount: 100000,
+                    note: 'テスト固定費データ'
+                });
+                
+                // 人件費データ
+                dataManager.addRecord('laborCosts', {
+                    year: currentYear,
+                    month: currentMonth,
+                    amount: 150000,
+                    note: 'テスト人件費データ'
+                });
+                
+                document.getElementById('test-data-status').innerHTML = 
+                    '<div class="success-message">テストデータを作成しました</div>';
+                    
+            } catch (error) {
+                document.getElementById('test-data-status').innerHTML = 
+                    `<div class="error-message">テストデータ作成エラー: ${error.message}</div>`;
+            }
+        }
+        
+        // 月別エクスポートテスト
+        async function testMonthlyExport() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth() + 1;
+                
+                const result = dataManager.exportToCSV({
+                    exportType: 'monthly',
+                    year: currentYear,
+                    month: currentMonth
+                });
+                
+                showTestResult('月別エクスポート', result);
+                
+            } catch (error) {
+                showTestError('月別エクスポート', error.message);
+            }
+        }
+        
+        // 年別エクスポートテスト
+        async function testYearlyExport() {
+            try {
+                const currentYear = new Date().getFullYear();
+                
+                const result = dataManager.exportToCSV({
+                    exportType: 'yearly',
+                    year: currentYear
+                });
+                
+                showTestResult('年別エクスポート', result);
+                
+            } catch (error) {
+                showTestError('年別エクスポート', error.message);
+            }
+        }
+        
+        // 期間指定エクスポートテスト
+        async function testRangeExport() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth() + 1;
+                
+                const result = dataManager.exportToCSV({
+                    exportType: 'range',
+                    startYear: currentYear,
+                    startMonth: 1,
+                    endYear: currentYear,
+                    endMonth: currentMonth
+                });
+                
+                showTestResult('期間指定エクスポート', result);
+                
+            } catch (error) {
+                showTestError('期間指定エクスポート', error.message);
+            }
+        }
+        
+        // 全データエクスポートテスト
+        async function testAllDataExport() {
+            try {
+                const result = dataManager.exportToCSV({
+                    exportType: 'all'
+                });
+                
+                showTestResult('全データエクスポート', result);
+                
+            } catch (error) {
+                showTestError('全データエクスポート', error.message);
+            }
+        }
+        
+        // テスト結果表示
+        function showTestResult(testName, result) {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML += `
+                <div class="success-message">
+                    <strong>${testName}:</strong> ${result.message}<br>
+                    ファイル名: ${result.filename}<br>
+                    レコード数: ${result.recordCount}件
+                </div>
+            `;
+        }
+        
+        // テストエラー表示
+        function showTestError(testName, error) {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML += `
+                <div class="error-message">
+                    <strong>${testName}:</strong> ${error}
+                </div>
+            `;
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initDataManager();
+        });
+    </script>
+    
+    <style>
+        .test-section {
+            margin: 2rem 0;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .test-section h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .export-controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        #test-results {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .success-message, .error-message {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</body>
+</html>

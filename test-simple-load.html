@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>シンプル読み込みテスト</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .log { margin: 5px 0; padding: 5px; background: #f0f0f0; border-radius: 3px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+    </style>
+</head>
+<body>
+    <h1>シンプル読み込みテスト</h1>
+    <div id="log"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log ${type}`;
+            entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            logDiv.appendChild(entry);
+            console.log(message);
+        }
+
+        log('テスト開始');
+
+        // 1つずつスクリプトを読み込んでテスト
+        function loadScript(src, callback) {
+            log(`${src} を読み込み中...`);
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = function() {
+                log(`✅ ${src} 読み込み成功`, 'success');
+                callback(null);
+            };
+            script.onerror = function(error) {
+                log(`❌ ${src} 読み込み失敗`, 'error');
+                callback(error);
+            };
+            document.head.appendChild(script);
+        }
+
+        // data-manager.jsを読み込んでテスト
+        loadScript('kaikei/js/data-manager.js', function(error) {
+            if (!error) {
+                // DataManagerクラスの確認
+                setTimeout(() => {
+                    if (typeof DataManager !== 'undefined') {
+                        log('✅ DataManagerクラスが定義されています', 'success');
+                        try {
+                            const dm = new DataManager();
+                            log('✅ DataManagerインスタンス作成成功', 'success');
+                        } catch (e) {
+                            log(`❌ DataManagerインスタンス作成失敗: ${e.message}`, 'error');
+                        }
+                    } else {
+                        log('❌ DataManagerクラスが未定義', 'error');
+                    }
+
+                    // 他のクラスも確認
+                    const classes = ['DataModels', 'DataValidator', 'UUIDGenerator'];
+                    classes.forEach(className => {
+                        if (typeof window[className] !== 'undefined') {
+                            log(`✅ ${className}クラスが定義されています`, 'success');
+                        } else {
+                            log(`❌ ${className}クラスが未定義`, 'error');
+                        }
+                    });
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>

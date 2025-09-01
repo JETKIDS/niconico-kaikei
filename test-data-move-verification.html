@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データ移動機能検証 - もうかりまっか</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 データ移動機能検証</h1>
+        </header>
+
+        <main>
+            <div id="content-area">
+                <div class="section-header">
+                    <h2>データ移動機能検証テスト</h2>
+                    <div class="section-controls">
+                        <button class="btn btn-primary" onclick="runVerificationTests()">検証テスト実行</button>
+                        <button class="btn btn-secondary" onclick="showTestResults()">結果表示</button>
+                    </div>
+                </div>
+
+                <div id="test-results">
+                    <h3>検証項目</h3>
+                    <ul>
+                        <li>✅ データ移動選択UI（複数選択対応）</li>
+                        <li>✅ 移動先店舗選択機能</li>
+                        <li>✅ データ移動実行とバリデーション機能</li>
+                        <li>✅ 移動履歴の記録と表示機能</li>
+                        <li>✅ 重複データチェック機能</li>
+                        <li>✅ エラーハンドリング</li>
+                    </ul>
+
+                    <div id="verification-status"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="kaikei/js/store-manager.js"></script>
+    <script src="kaikei/js/data-manager.js"></script>
+    <script src="kaikei/js/ui-manager.js"></script>
+    <script>
+        let storeManager;
+        let dataManager;
+        let uiManager;
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                storeManager = new StoreManager();
+                dataManager = new DataManager();
+                uiManager = new UIManager(dataManager);
+                
+                await storeManager.loadStoreData();
+                await dataManager.loadData();
+                
+                window.storeManager = storeManager;
+                window.dataManager = dataManager;
+                window.uiManager = uiManager;
+                
+                showStatus('初期化完了', 'success');
+            } catch (error) {
+                showStatus('初期化エラー: ' + error.message, 'error');
+            }
+        });
+
+        // 検証テスト実行
+        async function runVerificationTests() {
+            try {
+                showStatus('検証テストを実行中...', 'info');
+                
+                const results = [];
+                
+                // 1. StoreManagerの基本機能テスト
+                results.push(await testStoreManager());
+                
+                // 2. DataManagerのデータ移動機能テスト
+                results.push(await testDataMovement());
+                
+                // 3. UIManagerの選択機能テスト
+                results.push(await testUISelection());
+                
+                // 4. 移動履歴機能テスト
+                results.push(await testMoveHistory());
+                
+                // 5. 重複チェック機能テスト
+                results.push(await testDuplicateCheck());
+                
+                displayTestResults(results);
+                
+            } catch (error) {
+                showStatus('検証テストエラー: ' + error.message, 'error');
+            }
+        }
+
+        // StoreManager基本機能テスト
+        async function testStoreManager() {
+            try {
+                // 店舗作成テスト
+                const store1 = storeManager.addStore({
+                    name: 'テスト店舗1',
+                    address: 'テスト住所1',
+                    openDate: '2024-01-01',
+                    note: 'テスト用店舗1'
+                });
+                
+                const store2 = storeManager.addStore({
+                    name: 'テスト店舗2',
+                    address: 'テスト住所2',
+                    openDate: '2024-02-01',
+                    note: 'テスト用店舗2'
+                });
+                
+                // アクティブ店舗設定テスト
+                storeManager.setActiveStore(store1.id);
+                const activeStore = storeManager.getActiveStore();
+                
+                return {
+                    name: 'StoreManager基本機能',
+                    passed: activeStore && activeStore.id === store1.id,
+                    details: `店舗作成: ${store1.name}, ${store2.name} | アクティブ店舗: ${activeStore?.name}`
+                };
+                
+            } catch (error) {
+                return {
+                    name: 'StoreManager基本機能',
+                    passed: false,
+                    details: `エラー: ${error.message}`
+                };
+            }
+        }
+
+        // データ移動機能テスト
+        async function testDataMovement() {
+            try {
+                const stores = storeManager.getStores();
+                if (stores.length < 2) {
+                    throw new Error('テスト用店舗が不足しています');
+                }
+                
+                // テストデータ作成
+                storeManager.setActiveStore(stores[0].id);
+                const record = dataManager.addRecord('sales', {
+                    year: 2024,
+                    month: 12,
+                    amount: 100000,
+                    note: 'テスト売上データ'
+                });
+                
+                // データ移動実行
+                const movedRecord = dataManager.moveRecordToStore('sales', record.id, stores[1].id);
+                
+                return {
+                    name: 'データ移動機能',
+                    passed: movedRecord.storeId === stores[1].id,
+                    details: `レコード移動: ${stores[0].name} → ${stores[1].name}`
+                };
+                
+            } catch (error) {
+                return {
+                    name: 'データ移動機能',
+                    passed: false,
+                    details: `エラー: ${error.message}`
+                };
+            }
+        }
+
+        // UI選択機能テスト
+        async function testUISelection() {
+            try {
+                // UIManagerのメソッド存在確認
+                const methods = [
+                    'selectAllRecords',
+                    'clearSelection',
+                    'updateSelectionCount',
+                    'showDataMoveDialog',
+                    'showSingleDataMoveDialog'
+                ];
+                
+                const missingMethods = methods.filter(method => typeof uiManager[method] !== 'function');
+                
+                return {
+                    name: 'UI選択機能',
+                    passed: missingMethods.length === 0,
+                    details: missingMethods.length === 0 ? '全メソッドが実装済み' : `未実装メソッド: ${missingMethods.join(', ')}`
+                };
+                
+            } catch (error) {
+                return {
+                    name: 'UI選択機能',
+                    passed: false,
+                    details: `エラー: ${error.message}`
+                };
+            }
+        }
+
+        // 移動履歴機能テスト
+        async function testMoveHistory() {
+            try {
+                // 移動履歴取得テスト
+                const history = dataManager.getDataMoveHistory(10);
+                
+                // UIManagerの履歴表示メソッド確認
+                const hasHistoryMethod = typeof uiManager.showDataMoveHistory === 'function';
+                
+                return {
+                    name: '移動履歴機能',
+                    passed: hasHistoryMethod && Array.isArray(history),
+                    details: `履歴件数: ${history.length}件 | 表示メソッド: ${hasHistoryMethod ? '実装済み' : '未実装'}`
+                };
+                
+            } catch (error) {
+                return {
+                    name: '移動履歴機能',
+                    passed: false,
+                    details: `エラー: ${error.message}`
+                };
+            }
+        }
+
+        // 重複チェック機能テスト
+        async function testDuplicateCheck() {
+            try {
+                const stores = storeManager.getStores();
+                if (stores.length < 2) {
+                    throw new Error('テスト用店舗が不足しています');
+                }
+                
+                // 重複チェック用テストデータ
+                const testRecord = {
+                    year: 2024,
+                    month: 12,
+                    amount: 50000,
+                    category: 'テスト',
+                    note: '重複チェック用'
+                };
+                
+                // 重複チェック実行
+                const duplicates = dataManager.checkDuplicateData('sales', testRecord, stores[0].id);
+                
+                return {
+                    name: '重複チェック機能',
+                    passed: Array.isArray(duplicates),
+                    details: `重複チェック結果: ${duplicates.length}件の類似データ`
+                };
+                
+            } catch (error) {
+                return {
+                    name: '重複チェック機能',
+                    passed: false,
+                    details: `エラー: ${error.message}`
+                };
+            }
+        }
+
+        // テスト結果表示
+        function displayTestResults(results) {
+            let resultHTML = '<h3>検証テスト結果</h3>';
+            resultHTML += '<table class="data-table"><thead><tr><th>テスト項目</th><th>結果</th><th>詳細</th></tr></thead><tbody>';
+            
+            let passedCount = 0;
+            results.forEach(result => {
+                const status = result.passed ? '✅ 成功' : '❌ 失敗';
+                const statusClass = result.passed ? 'status-success' : 'status-error';
+                
+                if (result.passed) passedCount++;
+                
+                resultHTML += `
+                    <tr>
+                        <td>${result.name}</td>
+                        <td class="${statusClass}">${status}</td>
+                        <td>${result.details}</td>
+                    </tr>
+                `;
+            });
+            
+            resultHTML += '</tbody></table>';
+            resultHTML += `<div class="test-summary"><h4>テスト結果サマリー: ${passedCount}/${results.length} 項目が成功</h4></div>`;
+            
+            document.getElementById('test-results').innerHTML = resultHTML;
+            
+            const overallStatus = passedCount === results.length ? 'すべてのテストが成功しました' : `${results.length - passedCount}件のテストが失敗しました`;
+            const statusType = passedCount === results.length ? 'success' : 'warning';
+            showStatus(overallStatus, statusType);
+        }
+
+        // ステータス表示
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('verification-status');
+            statusDiv.className = `${type}-message`;
+            statusDiv.textContent = message;
+            
+            // 5秒後に消去
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = '';
+            }, 5000);
+        }
+
+        // 結果表示
+        function showTestResults() {
+            const stores = storeManager.getStores();
+            const history = dataManager.getDataMoveHistory(10);
+            
+            let resultHTML = '<h3>現在の状態</h3>';
+            resultHTML += `<p><strong>店舗数:</strong> ${stores.length}店舗</p>`;
+            resultHTML += `<p><strong>移動履歴:</strong> ${history.length}件</p>`;
+            resultHTML += `<p><strong>アクティブ店舗:</strong> ${storeManager.getActiveStore()?.name || 'なし'}</p>`;
+            
+            document.getElementById('test-results').innerHTML = resultHTML;
+        }
+    </script>
+</body>
+</html>

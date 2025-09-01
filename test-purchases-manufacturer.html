@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仕入れ管理メーカー機能テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>仕入れ管理メーカー機能テスト</h1>
+        </header>
+        
+        <main>
+            <div id="content-area">
+                <h2>仕入れ管理のメーカー項目テスト</h2>
+                
+                <div class="test-section">
+                    <h3>テストデータ作成</h3>
+                    <button class="btn btn-primary" onclick="createTestPurchasesData()">メーカー付き仕入れデータを作成</button>
+                    <div id="test-data-status"></div>
+                </div>
+                
+                <div class="test-section">
+                    <h3>データ表示テスト</h3>
+                    <div id="purchases-table"></div>
+                </div>
+                
+                <div class="test-section">
+                    <h3>CSVエクスポートテスト</h3>
+                    <button class="btn btn-secondary" onclick="testPurchasesCSVExport()">仕入れデータCSVエクスポート</button>
+                    <div id="csv-test-result"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="kaikei/js/data-manager.js"></script>
+    <script src="kaikei/js/ui-manager.js"></script>
+    <script>
+        let dataManager;
+        let uiManager;
+        
+        // 初期化
+        async function init() {
+            dataManager = new DataManager();
+            await dataManager.loadData();
+            uiManager = new UIManager(dataManager);
+        }
+        
+        // メーカー付き仕入れテストデータ作成
+        async function createTestPurchasesData() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth() + 1;
+                
+                // メーカー名付きの仕入れデータを複数作成
+                const testData = [
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        amount: 150000,
+                        manufacturer: '明治乳業',
+                        note: '牛乳・ヨーグルト仕入れ'
+                    },
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        amount: 80000,
+                        manufacturer: '森永乳業',
+                        note: 'チーズ・バター仕入れ'
+                    },
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        amount: 120000,
+                        manufacturer: '雪印メグミルク',
+                        note: '牛乳・アイスクリーム仕入れ'
+                    },
+                    {
+                        year: currentYear,
+                        month: currentMonth,
+                        amount: 50000,
+                        manufacturer: '', // メーカー名なしのテストケース
+                        note: 'その他仕入れ（メーカー名なし）'
+                    }
+                ];
+                
+                for (const data of testData) {
+                    dataManager.addRecord('purchases', data);
+                }
+                
+                document.getElementById('test-data-status').innerHTML = 
+                    '<div class="success-message">メーカー付き仕入れテストデータを作成しました</div>';
+                
+                // データ表示を更新
+                displayPurchasesData();
+                
+            } catch (error) {
+                document.getElementById('test-data-status').innerHTML = 
+                    `<div class="error-message">テストデータ作成エラー: ${error.message}</div>`;
+            }
+        }
+        
+        // 仕入れデータ表示
+        function displayPurchasesData() {
+            const purchasesData = dataManager.getDataByCategory('purchases');
+            let tableHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>年</th>
+                            <th>月</th>
+                            <th>金額</th>
+                            <th>メーカー名</th>
+                            <th>備考</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            if (purchasesData.length === 0) {
+                tableHTML += '<tr><td colspan="5">データがありません</td></tr>';
+            } else {
+                purchasesData.forEach(record => {
+                    tableHTML += `
+                        <tr>
+                            <td>${record.year}</td>
+                            <td>${record.month}</td>
+                            <td>${record.amount ? record.amount.toLocaleString() + '円' : ''}</td>
+                            <td>${record.manufacturer || '（未設定）'}</td>
+                            <td>${record.note || ''}</td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            tableHTML += '</tbody></table>';
+            document.getElementById('purchases-table').innerHTML = tableHTML;
+        }
+        
+        // CSVエクスポートテスト
+        async function testPurchasesCSVExport() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth() + 1;
+                
+                const result = dataManager.exportToCSV({
+                    exportType: 'monthly',
+                    year: currentYear,
+                    month: currentMonth
+                });
+                
+                document.getElementById('csv-test-result').innerHTML = `
+                    <div class="success-message">
+                        CSVエクスポート成功！<br>
+                        ファイル名: ${result.filename}<br>
+                        レコード数: ${result.recordCount}件<br>
+                        メーカー名がCSVに含まれているか確認してください。
+                    </div>
+                `;
+                
+            } catch (error) {
+                document.getElementById('csv-test-result').innerHTML = 
+                    `<div class="error-message">CSVエクスポートエラー: ${error.message}</div>`;
+            }
+        }
+        
+        // 初期化実行
+        document.addEventListener('DOMContentLoaded', async () => {
+            await init();
+            displayPurchasesData(); // 既存データがあれば表示
+        });
+    </script>
+    
+    <style>
+        .test-section {
+            margin: 2rem 0;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .test-section h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .success-message, .error-message {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</body>
+</html>

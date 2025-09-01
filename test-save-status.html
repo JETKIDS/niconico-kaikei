@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>保存状態表示テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>保存状態表示テスト</h1>
+            <div id="save-status" class="save-status">
+                <span id="save-status-text">テスト準備中...</span>
+                <span id="save-status-icon" class="save-status-icon">⏳</span>
+            </div>
+        </header>
+
+        <main>
+            <div style="padding: 2rem;">
+                <h2>保存状態テスト</h2>
+                <div style="margin: 1rem 0;">
+                    <button onclick="testSaveStatus('ready')">準備完了状態</button>
+                    <button onclick="testSaveStatus('saving')">保存中状態</button>
+                    <button onclick="testSaveStatus('saved')">保存完了状態</button>
+                    <button onclick="testSaveStatus('unsaved')">未保存状態</button>
+                    <button onclick="testSaveStatus('error')">エラー状態</button>
+                    <button onclick="testSaveStatus('loading')">読み込み中状態</button>
+                </div>
+                
+                <div style="margin: 1rem 0;">
+                    <button onclick="testDataSaveEvent(true)">保存成功イベント</button>
+                    <button onclick="testDataSaveEvent(false)">保存失敗イベント</button>
+                    <button onclick="testDataChangeEvent()">データ変更イベント</button>
+                    <button onclick="testRetryEvent()">再試行必要イベント</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="kaikei/js/ui-manager.js"></script>
+    <script>
+        let saveStatusManager;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            saveStatusManager = new SaveStatusManager();
+        });
+        
+        function testSaveStatus(type) {
+            const messages = {
+                ready: '準備完了',
+                saving: '保存中...',
+                saved: '保存完了',
+                unsaved: '未保存の変更があります',
+                error: '保存エラーが発生しました',
+                loading: 'データ読み込み中...'
+            };
+            
+            saveStatusManager.showStatus(type, messages[type]);
+        }
+        
+        function testDataSaveEvent(success) {
+            const event = new CustomEvent('dataSaveStatus', {
+                detail: {
+                    success: success,
+                    timestamp: new Date(),
+                    error: success ? null : 'テスト用エラーメッセージ',
+                    recordCount: 42
+                }
+            });
+            document.dispatchEvent(event);
+        }
+        
+        function testDataChangeEvent() {
+            const event = new CustomEvent('dataChanged', {
+                detail: {
+                    timestamp: new Date(),
+                    hasUnsavedChanges: true
+                }
+            });
+            document.dispatchEvent(event);
+        }
+        
+        function testRetryEvent() {
+            const event = new CustomEvent('saveRetryRequired', {
+                detail: {
+                    error: 'テスト用保存エラー',
+                    retryCount: 3,
+                    hasUnsavedChanges: true
+                }
+            });
+            document.dispatchEvent(event);
+        }
+    </script>
+</body>
+</html>

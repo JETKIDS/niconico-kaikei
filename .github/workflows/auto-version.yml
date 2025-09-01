@@ -1,0 +1,191 @@
+name: Auto Version Update
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install dependencies
+      run: |
+        npm install -g semver
+        npm install -g conventional-commits-parser
+
+    - name: Determine version bump type
+      id: version-type
+      run: |
+        # コミットメッセージを分析してバージョンアップタイプを決定
+        COMMIT_MSG=$(git log -1 --pretty=%B)
+        echo "Commit message: $COMMIT_MSG"
+        
+        # 破壊的変更の検出
+        if echo "$COMMIT_MSG" | grep -qiE "(BREAKING CHANGE|breaking:|major:)"; then
+          echo "type=major" >> $GITHUB_OUTPUT
+          echo "description=破壊的変更" >> $GITHUB_OUTPUT
+        # 新機能の検出
+        elif echo "$COMMIT_MSG" | grep -qiE "(feat:|feature:|minor:|add:)"; then
+          echo "type=minor" >> $GITHUB_OUTPUT
+          echo "description=新機能追加" >> $GITHUB_OUTPUT
+        # バグ修正やその他の変更
+        elif echo "$COMMIT_MSG" | grep -qiE "(fix:|bug:|patch:|update:|refactor:|docs:|style:|test:)"; then
+          echo "type=patch" >> $GITHUB_OUTPUT
+          echo "description=バグ修正・改善" >> $GITHUB_OUTPUT
+        # デフォルトはパッチ
+        else
+          echo "type=patch" >> $GITHUB_OUTPUT
+          echo "description=コード更新" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Update version in JavaScript files
+      run: |
+        # 現在のバージョンを取得
+        CURRENT_VERSION=$(node -e "
+          const fs = require('fs');
+          const versionFile = 'kaikei/js/version.js';
+          const content = fs.readFileSync(versionFile, 'utf8');
+          const majorMatch = content.match(/major:\s*(\d+)/);
+          const minorMatch = content.match(/minor:\s*(\d+)/);
+          const patchMatch = content.match(/patch:\s*(\d+)/);
+          const major = majorMatch ? majorMatch[1] : '1';
+          const minor = minorMatch ? minorMatch[1] : '0';
+          const patch = patchMatch ? patchMatch[1] : '0';
+          console.log(\`\${major}.\${minor}.\${patch}\`);
+        ")
+        
+        echo "Current version: $CURRENT_VERSION"
+        
+        # 新しいバージョンを計算
+        TYPE="${{ steps.version-type.outputs.type }}"
+        if [ "$TYPE" = "major" ]; then
+          NEW_VERSION=$(npx semver -i major $CURRENT_VERSION)
+        elif [ "$TYPE" = "minor" ]; then
+          NEW_VERSION=$(npx semver -i minor $CURRENT_VERSION)
+        else
+          NEW_VERSION=$(npx semver -i patch $CURRENT_VERSION)
+        fi
+        
+        echo "New version: $NEW_VERSION"
+        
+        # バージョン番号を分解
+        IFS='.' read -r NEW_MAJOR NEW_MINOR NEW_PATCH <<< "$NEW_VERSION"
+        
+        # ビルド番号を生成（YYMMDDHHMMSS形式）
+        BUILD_NUMBER=$(date +"%y%m%d%H%M%S")
+        
+        # version.js を更新
+        sed -i "s/major: [0-9]*/major: $NEW_MAJOR/" kaikei/js/version.js
+        sed -i "s/minor: [0-9]*/minor: $NEW_MINOR/" kaikei/js/version.js
+        sed -i "s/patch: [0-9]*/patch: $NEW_PATCH/" kaikei/js/version.js
+        
+        # index.html のバージョン表示を更新
+        sed -i "s/v[0-9]*\.[0-9]*\.[0-9]*/v$NEW_VERSION/" kaikei/index.html
+        
+        # 環境変数に設定
+        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+        echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+        echo "VERSION_TYPE=$TYPE" >> $GITHUB_ENV
+
+    - name: Update version history
+      run: |
+        # バージョン履歴ファイルを作成/更新
+        HISTORY_FILE="kaikei/version-history.json"
+        COMMIT_SHA=$(git rev-parse HEAD)
+        COMMIT_MSG=$(git log -1 --pretty=%B | head -1)
+        TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+        
+        # 履歴ファイルが存在しない場合は作成
+        if [ ! -f "$HISTORY_FILE" ]; then
+          echo "[]" > "$HISTORY_FILE"
+        fi
+        
+        # 新しい履歴エントリを追加
+        node -e "
+          const fs = require('fs');
+          const history = JSON.parse(fs.readFileSync('$HISTORY_FILE', 'utf8'));
+          const newEntry = {
+            version: 'v${{ env.NEW_VERSION }}.${{ env.BUILD_NUMBER }}',
+            changeType: '${{ env.VERSION_TYPE }}',
+            description: '${{ steps.version-type.outputs.description }}: $COMMIT_MSG',
+            timestamp: '$TIMESTAMP',
+            commit: '$COMMIT_SHA'
+          };
+          history.push(newEntry);
+          // 最新20件のみ保持
+          if (history.length > 20) {
+            history.splice(0, history.length - 20);
+          }
+          fs.writeFileSync('$HISTORY_FILE', JSON.stringify(history, null, 2));
+        "
+
+    - name: Create version tag
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # タグを作成
+        TAG_NAME="v${{ env.NEW_VERSION }}"
+        git tag -a "$TAG_NAME" -m "Auto-generated version $TAG_NAME (${{ steps.version-type.outputs.description }})"
+
+    - name: Commit version changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # 変更をコミット
+        git add kaikei/js/version.js kaikei/index.html kaikei/version-history.json
+        
+        if git diff --staged --quiet; then
+          echo "No version changes to commit"
+        else
+          git commit -m "chore: auto-update version to v${{ env.NEW_VERSION }} [${{ env.VERSION_TYPE }}]
+          
+          - Version type: ${{ env.VERSION_TYPE }}
+          - Build number: ${{ env.BUILD_NUMBER }}
+          - Description: ${{ steps.version-type.outputs.description }}"
+        fi
+
+    - name: Push changes and tags
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        git push origin HEAD:main
+        git push origin --tags
+
+    - name: Create GitHub Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.version-type.outputs.type != 'patch'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ env.NEW_VERSION }}
+        release_name: Release v${{ env.NEW_VERSION }}
+        body: |
+          ## 🚀 バージョン ${{ env.NEW_VERSION }} リリース
+          
+          **変更タイプ**: ${{ steps.version-type.outputs.description }}
+          **ビルド番号**: ${{ env.BUILD_NUMBER }}
+          
+          ### 📝 変更内容
+          ${{ github.event.head_commit.message }}
+          
+          ### 📊 統計情報
+          - コミット: ${{ github.sha }}
+          - 日時: ${{ github.event.head_commit.timestamp }}
+          - 作成者: ${{ github.event.head_commit.author.name }}
+        draft: false
+        prerelease: false

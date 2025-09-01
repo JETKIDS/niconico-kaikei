@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字列折り返し修正テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+    <style>
+        .test-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border: 1px solid #d6c8b8;
+            border-radius: 8px;
+            background-color: #fdfaf5;
+        }
+        .test-title {
+            color: #8b0000;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        .test-description {
+            color: #4d3c2c;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        .width-tester {
+            border: 1px dashed #a09080;
+            padding: 1rem;
+            margin: 1rem 0;
+            background-color: #f5f0e8;
+        }
+        .width-label {
+            font-weight: bold;
+            color: #8b0000;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>文字列折り返し修正テスト</h1>
+            <div class="header-controls">
+                <div class="global-store-selector">
+                    <label>店舗:</label>
+                    <select>
+                        <option>本店（非常に長い店舗名のテスト）</option>
+                        <option>支店A（これも長い名前）</option>
+                        <option>支店B（さらに長い店舗名のテスト用）</option>
+                    </select>
+                </div>
+                <div class="global-date-selector">
+                    <label>期間:</label>
+                    <select>
+                        <option>2024年12月</option>
+                        <option>2024年11月</option>
+                        <option>2024年10月</option>
+                    </select>
+                </div>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="#" class="nav-link">売上データ入力</a></li>
+                    <li><a href="#" class="nav-link">仕入データ入力</a></li>
+                    <li><a href="#" class="nav-link">固定費入力</a></li>
+                    <li><a href="#" class="nav-link">変動費入力</a></li>
+                    <li><a href="#" class="nav-link">店舗管理</a></li>
+                    <li><a href="#" class="nav-link">収支レポート</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <div id="content-area">
+                <div class="test-section">
+                    <h2 class="test-title">1. ナビゲーションメニューテスト</h2>
+                    <p class="test-description">
+                        上部のナビゲーションメニューが適切な幅で表示され、文字が折り返されていないことを確認してください。
+                    </p>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">2. ヘッダーコントロールテスト</h2>
+                    <p class="test-description">
+                        店舗選択と期間選択のドロップダウンが適切に表示され、長い店舗名でも折り返されていないことを確認してください。
+                    </p>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">3. 店舗管理テーブルテスト</h2>
+                    <p class="test-description">
+                        店舗管理画面のテーブル表示をシミュレートします。「アクティブ」「非アクティブ」の表示と操作ボタンが適切に配置されていることを確認してください。
+                    </p>
+                    
+                    <table class="data-table store-table">
+                        <thead>
+                            <tr>
+                                <th>店舗名</th>
+                                <th>住所</th>
+                                <th>開店日</th>
+                                <th>備考</th>
+                                <th>状態</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="active-store">
+                                <td><strong title="本店（メイン店舗）">本店（メイン店舗）</strong></td>
+                                <td title="東京都渋谷区渋谷1-1-1">東京都渋谷区渋谷1-1-1</td>
+                                <td>2020-01-01</td>
+                                <td title="メインの店舗です">メインの店舗です</td>
+                                <td><span class="status-active">アクティブ</span></td>
+                                <td>
+                                    <button class="store-action-btn btn-secondary" title="店舗情報を編集">編集</button>
+                                    <button class="store-action-btn btn-danger" title="この店舗を削除">削除</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong title="支店A（サブ店舗）">支店A（サブ店舗）</strong></td>
+                                <td title="大阪府大阪市北区梅田2-2-2">大阪府大阪市北区梅田2-2-2</td>
+                                <td>2021-06-15</td>
+                                <td title="関西地区の拠点店舗">関西地区の拠点店舗</td>
+                                <td><span class="status-inactive">非アクティブ</span></td>
+                                <td>
+                                    <button class="store-action-btn btn-secondary" title="この店舗をアクティブにする">有効化</button>
+                                    <button class="store-action-btn btn-secondary" title="店舗情報を編集">編集</button>
+                                    <button class="store-action-btn btn-danger" title="この店舗を削除">削除</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong title="支店B（新規店舗）">支店B（新規店舗）</strong></td>
+                                <td title="愛知県名古屋市中区栄3-3-3">愛知県名古屋市中区栄3-3-3</td>
+                                <td>2023-03-20</td>
+                                <td title="中部地区の新規展開店舗">中部地区の新規展開店舗</td>
+                                <td><span class="status-inactive">非アクティブ</span></td>
+                                <td>
+                                    <button class="store-action-btn btn-secondary" title="この店舗をアクティブにする">有効化</button>
+                                    <button class="store-action-btn btn-secondary" title="店舗情報を編集">編集</button>
+                                    <button class="store-action-btn btn-danger" title="この店舗を削除">削除</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">4. レスポンシブテスト</h2>
+                    <p class="test-description">
+                        ブラウザの幅を変更して、768px以下、480px以下でも適切に表示されることを確認してください。
+                    </p>
+                    
+                    <div class="width-tester">
+                        <div class="width-label">現在の画面幅をテスト:</div>
+                        <div>
+                            <span class="status-active">アクティブ状態</span>
+                            <span class="status-inactive">非アクティブ状態</span>
+                        </div>
+                        <div style="margin-top: 0.5rem;">
+                            <button class="store-action-btn btn-secondary">有効化</button>
+                            <button class="store-action-btn btn-secondary">編集</button>
+                            <button class="store-action-btn btn-danger">削除</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="test-section">
+                    <h2 class="test-title">5. 通常ボタンテスト</h2>
+                    <p class="test-description">
+                        通常のボタンも適切なサイズで表示されることを確認してください。
+                    </p>
+                    
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                        <button class="btn btn-primary">データ追加</button>
+                        <button class="btn btn-secondary">キャンセル</button>
+                        <button class="btn btn-danger">削除</button>
+                        <span class="status-active">アクティブ</span>
+                        <span class="status-inactive">非アクティブ</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 画面幅の表示
+        function updateScreenWidth() {
+            const width = window.innerWidth;
+            const widthTester = document.querySelector('.width-tester .width-label');
+            if (widthTester) {
+                widthTester.textContent = `現在の画面幅: ${width}px`;
+                
+                if (width <= 480) {
+                    widthTester.style.color = '#d05050';
+                    widthTester.textContent += ' (超小画面)';
+                } else if (width <= 768) {
+                    widthTester.style.color = '#d0a000';
+                    widthTester.textContent += ' (小画面)';
+                } else {
+                    widthTester.style.color = '#408040';
+                    widthTester.textContent += ' (通常画面)';
+                }
+            }
+        }
+
+        window.addEventListener('resize', updateScreenWidth);
+        window.addEventListener('load', updateScreenWidth);
+    </script>
+</body>
+</html>

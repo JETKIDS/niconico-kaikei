@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>グラフ機能テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>グラフ機能テスト</h1>
+        </header>
+        <main>
+            <div id="content-area">
+                <h2>月次グラフテスト</h2>
+                <div class="charts-section">
+                    <div class="charts-container">
+                        <div class="chart-item">
+                            <div class="chart-wrapper">
+                                <canvas id="expenseBreakdownChart" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-item">
+                            <div class="chart-wrapper">
+                                <canvas id="incomeExpenseChart" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h2>年間グラフテスト</h2>
+                <div class="charts-section">
+                    <div class="charts-container">
+                        <div class="chart-item">
+                            <div class="chart-wrapper">
+                                <canvas id="yearlyTrendChart" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-item">
+                            <div class="chart-wrapper">
+                                <canvas id="yearlyComparisonChart" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="testMonthlyCharts()">月次グラフテスト</button>
+                <button onclick="testYearlyCharts()">年間グラフテスト</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="kaikei/lib/chart.min.js"></script>
+    <script src="kaikei/js/data-manager.js"></script>
+    <script src="kaikei/js/chart-manager.js"></script>
+    
+    <script>
+        // テスト用のデータマネージャーとチャートマネージャーを初期化
+        const testDataManager = new DataManager();
+        const testChartManager = new ChartManager(testDataManager);
+        
+        // テスト用データを追加
+        function setupTestData() {
+            // 売上データ
+            testDataManager.addRecord('sales', {
+                year: 2024,
+                month: 1,
+                amount: 500000,
+                note: 'テスト売上'
+            });
+            
+            // 仕入れデータ
+            testDataManager.addRecord('purchases', {
+                year: 2024,
+                month: 1,
+                amount: 200000,
+                note: 'テスト仕入れ'
+            });
+            
+            // 固定費データ
+            testDataManager.addRecord('fixedCosts', {
+                year: 2024,
+                month: 1,
+                category: '家賃',
+                amount: 100000,
+                note: 'テスト家賃'
+            });
+            
+            // 人件費データ
+            testDataManager.addRecord('laborCosts', {
+                year: 2024,
+                month: 1,
+                amount: 80000,
+                note: 'テスト人件費'
+            });
+        }
+        
+        function testMonthlyCharts() {
+            setupTestData();
+            testChartManager.renderMonthlyChart(2024, 1);
+            console.log('月次グラフテスト実行');
+        }
+        
+        function testYearlyCharts() {
+            setupTestData();
+            testChartManager.renderYearlyChart(2024);
+            console.log('年間グラフテスト実行');
+        }
+    </script>
+</body>
+</html>

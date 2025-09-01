@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>もうかりまっか</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <button 
+                class="manual-button" 
+                id="manual-button"
+                type="button"
+                aria-label="操作マニュアルを新しいタブで開く"
+                title="操作マニュアルを開く"
+                tabindex="0"
+                onclick="if(!window.manualButtonManager || !window.manualButtonManager.isInitialized) { window.open('manual.html', '_blank', 'noopener,noreferrer'); }">
+                <span class="manual-button-icon" aria-hidden="true">📖</span>
+                <span class="manual-button-text">マニュアル</span>
+            </button>
+            
+            <!-- JavaScript無効時のフォールバック -->
+            <noscript>
+                <a href="manual.html" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="manual-button manual-button-noscript"
+                   title="操作マニュアルを開く（JavaScript無効）"
+                   style="display: inline-block; text-decoration: none; position: absolute; top: 1rem; left: 1.5rem;">
+                    <span class="manual-button-icon" aria-hidden="true">📖</span>
+                    <span class="manual-button-text">マニュアル</span>
+                </a>
+            </noscript>
+            <h1>もうかりまっか <span class="version-display" id="app-version">v1.0.0</span></h1>
+            <div class="header-controls">
+                <div id="save-status" class="save-status">
+                    <span id="save-status-text">データ読み込み中...</span>
+                    <span id="save-status-icon" class="save-status-icon">⏳</span>
+                </div>
+                <div id="global-store-selector" class="global-store-selector">
+                    <!-- 店舗セレクターは動的に生成 -->
+                </div>
+                <div id="global-date-selector" class="global-date-selector">
+                    <label for="global-year">表示年:</label>
+                    <select id="global-year" onchange="app.changeGlobalDate()">
+                        <!-- 年のオプションは動的に生成 -->
+                    </select>
+                    <label for="global-month">表示月:</label>
+                    <select id="global-month" onchange="app.changeGlobalDate()">
+                        <!-- 月のオプションは動的に生成 -->
+                    </select>
+                </div>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="#sales" class="nav-link active" data-section="sales">売上管理</a></li>
+                    <li><a href="#purchases" class="nav-link" data-section="purchases">仕入れ管理</a></li>
+                    <li><a href="#fixed-costs" class="nav-link" data-section="fixed-costs">固定費</a></li>
+                    <li><a href="#variable-costs" class="nav-link" data-section="variable-costs">変動費</a></li>
+                    <li><a href="#labor-costs" class="nav-link" data-section="labor-costs">人件費</a></li>
+
+                    <li><a href="#consumption-tax" class="nav-link" data-section="consumption-tax">消費税</a></li>
+                    <li><a href="#monthly-payments" class="nav-link" data-section="monthly-payments">月々の返済</a></li>
+                    <li><a href="#manufacturer-deposits" class="nav-link"
+                            data-section="manufacturer-deposits">メーカー保証金</a></li>
+                    <li><a href="#reports" class="nav-link" data-section="reports">収支レポート</a></li>
+                    <li><a href="#stores" class="nav-link" data-section="stores">店舗管理</a></li>
+                    <li><a href="#backup" class="nav-link" data-section="backup">データ管理</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <div id="content-area">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 大本営會計機構株式会社</p>
+        </footer>
+    </div>
+
+    <!-- Include Chart.js library from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js" 
+            onload="console.log('✓ Chart.js loaded from CDN')"
+            onerror="console.warn('Chart.js CDN failed - trying local fallback'); 
+                     var script = document.createElement('script'); 
+                     script.src = 'lib/chart.min.js'; 
+                     script.onerror = function() { console.warn('Chart.js library not found - charts will not work'); }; 
+                     document.head.appendChild(script);"></script>
+    
+    <!-- Version Management System -->
+    <script src="js/version.js"></script>
+    <script src="js/version-utils.js"></script>
+    
+    <!-- Include application scripts in dependency order -->
+    <script>
+        // スクリプト読み込み状況を追跡
+        window.scriptLoadStatus = {
+            dataManager: false,
+            storeManager: false,
+            uiManager: false,
+            chartManager: false,
+            app: false
+        };
+        
+        // エラーハンドリング関数
+        function handleScriptError(scriptName, error) {
+            console.error(`${scriptName} の読み込みに失敗しました:`, error);
+            
+            // XSS対策：テキストコンテンツを安全に設定
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'padding: 20px; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 4px; margin: 20px;';
+            
+            const title = document.createElement('h2');
+            title.textContent = 'スクリプト読み込みエラー';
+            
+            const message1 = document.createElement('p');
+            const strong = document.createElement('strong');
+            strong.textContent = scriptName;
+            message1.appendChild(strong);
+            message1.appendChild(document.createTextNode(' の読み込みに失敗しました。'));
+            
+            const message2 = document.createElement('p');
+            message2.textContent = 'ページを再読み込みしてください。';
+            
+            const button = document.createElement('button');
+            button.textContent = 'ページを再読み込み';
+            button.style.cssText = 'padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;';
+            button.onclick = () => location.reload();
+            
+            errorDiv.appendChild(title);
+            errorDiv.appendChild(message1);
+            errorDiv.appendChild(message2);
+            errorDiv.appendChild(button);
+            
+            document.body.innerHTML = '';
+            document.body.appendChild(errorDiv);
+        }
+    </script>
+    
+    <script defer src="js/data-manager.js" 
+            onload="console.log('✓ data-manager.js loaded'); console.log('DataManager check:', typeof DataManager); window.scriptLoadStatus.dataManager = true;" 
+            onerror="handleScriptError('data-manager.js', event)"></script>
+    
+    <script defer src="js/store-manager.js" 
+            onload="console.log('✓ store-manager.js loaded'); window.scriptLoadStatus.storeManager = true;" 
+            onerror="handleScriptError('store-manager.js', event)"></script>
+    
+    <script defer src="js/ui-manager.js" 
+            onload="console.log('✓ ui-manager.js loaded'); window.scriptLoadStatus.uiManager = true;" 
+            onerror="handleScriptError('ui-manager.js', event)"></script>
+    
+    <script defer src="js/chart-manager.js" 
+            onload="console.log('✓ chart-manager.js loaded'); window.scriptLoadStatus.chartManager = true;" 
+            onerror="handleScriptError('chart-manager.js', event)"></script>
+    
+    <script defer src="js/app.js" 
+            onload="console.log('✓ app.js loaded'); window.scriptLoadStatus.app = true;" 
+            onerror="handleScriptError('app.js', event)"></script>
+</body>
+
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人件費・その他費用テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>人件費・その他費用フォームテスト</h1>
+        
+        <div id="test-area">
+            <h2>人件費管理</h2>
+            <button onclick="testLaborCosts()">人件費フォームテスト</button>
+            <button onclick="addTestLaborCost()">人件費テストデータ追加</button>
+            
+            <h2>その他費用管理</h2>
+            <button onclick="testOtherExpenses()">その他費用フォームテスト</button>
+            <button onclick="addTestOtherExpense()">その他費用テストデータ追加</button>
+            
+            <h2>バリデーションテスト</h2>
+            <button onclick="runAllTests()">全テスト実行</button>
+            <button onclick="testLaborCostsValidation()">人件費バリデーションテスト</button>
+            <button onclick="testOtherExpensesValidation()">その他費用バリデーションテスト</button>
+            <button onclick="testCRUDOperations()">CRUD操作テスト</button>
+            
+            <h2>要件検証テスト</h2>
+            <button onclick="runRequirementsVerification()">要件検証実行</button>
+            <button onclick="verifyRequirement41()">要件4.1検証</button>
+            <button onclick="verifyRequirement42()">要件4.2検証</button>
+            <button onclick="verifyRequirement44()">要件4.4検証</button>
+            <button onclick="verifyUIForms()">UIフォーム検証</button>
+            
+            <div id="content-area">
+                <!-- テスト結果がここに表示される -->
+            </div>
+            
+            <div id="form-container" style="display: none;">
+                <!-- フォームは動的に生成 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="kaikei/js/data-manager.js"></script>
+    <script src="kaikei/js/ui-manager.js"></script>
+    <script src="kaikei/js/chart-manager.js"></script>
+    <script src="kaikei/js/app.js"></script>
+    <script src="test-validation.js"></script>
+    <script src="requirements-verification.js"></script>
+    
+    <script>
+        let dataManager, uiManager;
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            dataManager = new DataManager();
+            await dataManager.loadData();
+            uiManager = new UIManager(dataManager);
+            
+            window.dataManager = dataManager;
+            window.uiManager = uiManager;
+            
+            console.log('アプリケーション初期化完了');
+        });
+        
+        function testLaborCosts() {
+            console.log('Testing labor costs form...');
+            uiManager.showDataManagement('人件費管理', 'laborCosts');
+            
+            // フォームを自動で開く
+            setTimeout(() => {
+                uiManager.showInputForm('laborCosts');
+            }, 500);
+        }
+        
+        function testOtherExpenses() {
+            console.log('Testing other expenses form...');
+            uiManager.showDataManagement('その他費用管理', 'otherExpenses');
+            
+            // フォームを自動で開く
+            setTimeout(() => {
+                uiManager.showInputForm('otherExpenses');
+            }, 500);
+        }
+        
+        // テストデータの追加
+        function addTestLaborCost() {
+            try {
+                const testData = {
+                    year: 2024,
+                    month: 3,
+                    amount: 150000,
+                    note: 'テスト人件費データ'
+                };
+                
+                dataManager.addRecord('laborCosts', testData);
+                console.log('人件費テストデータを追加しました:', testData);
+                uiManager.showSection('labor-costs');
+            } catch (error) {
+                console.error('人件費データ追加エラー:', error);
+            }
+        }
+        
+        function addTestOtherExpense() {
+            try {
+                const testData = {
+                    year: 2024,
+                    month: 3,
+                    category: '広告費',
+                    amount: 50000,
+                    note: 'テストその他費用データ'
+                };
+                
+                dataManager.addRecord('otherExpenses', testData);
+                console.log('その他費用テストデータを追加しました:', testData);
+                uiManager.showSection('other-expenses');
+            } catch (error) {
+                console.error('その他費用データ追加エラー:', error);
+            }
+        }
+    </script>
+</body>
+</html>

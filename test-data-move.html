@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データ移動機能テスト - もうかりまっか</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 データ移動機能テスト</h1>
+        </header>
+
+        <main>
+            <div id="content-area">
+                <div class="section-header">
+                    <h2>データ移動機能テスト</h2>
+                    <div class="section-controls">
+                        <button class="btn btn-primary" onclick="initializeTestData()">テストデータ作成</button>
+                        <button class="btn btn-secondary" onclick="showTestResults()">テスト結果表示</button>
+                        <button class="btn btn-danger" onclick="clearTestData()">テストデータクリア</button>
+                    </div>
+                </div>
+
+                <div id="test-results">
+                    <h3>テスト手順</h3>
+                    <ol>
+                        <li>「テストデータ作成」ボタンをクリックして、複数店舗とサンプルデータを作成</li>
+                        <li>メインアプリケーション（index.html）を開く</li>
+                        <li>店舗を切り替えて、各店舗にデータが正しく分離されていることを確認</li>
+                        <li>売上データなどの画面で、複数のデータを選択して「選択したデータを移動」をクリック</li>
+                        <li>移動先店舗を選択して移動を実行</li>
+                        <li>店舗管理画面で「データ移動履歴」を確認</li>
+                        <li>移動したデータが正しく移動先店舗に表示されることを確認</li>
+                    </ol>
+
+                    <div id="test-status"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="kaikei/js/store-manager.js"></script>
+    <script src="kaikei/js/data-manager.js"></script>
+    <script>
+        let storeManager;
+        let dataManager;
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                storeManager = new StoreManager();
+                dataManager = new DataManager();
+                
+                await storeManager.loadStores();
+                await dataManager.loadData();
+                
+                window.storeManager = storeManager;
+                window.dataManager = dataManager;
+                
+                showStatus('初期化完了', 'success');
+            } catch (error) {
+                showStatus('初期化エラー: ' + error.message, 'error');
+            }
+        });
+
+        // テストデータ作成
+        async function initializeTestData() {
+            try {
+                showStatus('テストデータを作成中...', 'info');
+
+                // 既存データをクリア
+                await clearTestData();
+
+                // テスト店舗を作成
+                const store1 = await storeManager.addStore({
+                    name: '本店',
+                    address: '東京都渋谷区1-1-1',
+                    openDate: '2024-01-01',
+                    note: 'メイン店舗'
+                });
+
+                const store2 = await storeManager.addStore({
+                    name: '支店A',
+                    address: '東京都新宿区2-2-2',
+                    openDate: '2024-02-01',
+                    note: '支店A'
+                });
+
+                const store3 = await storeManager.addStore({
+                    name: '支店B',
+                    address: '東京都池袋区3-3-3',
+                    openDate: '2024-03-01',
+                    note: '支店B'
+                });
+
+                // 本店をアクティブに設定
+                storeManager.setActiveStore(store1.id);
+
+                // 本店のテストデータ作成
+                await createStoreTestData(store1.id, '本店');
+                
+                // 支店Aのテストデータ作成
+                storeManager.setActiveStore(store2.id);
+                await createStoreTestData(store2.id, '支店A');
+
+                // 支店Bのテストデータ作成
+                storeManager.setActiveStore(store3.id);
+                await createStoreTestData(store3.id, '支店B');
+
+                // 本店に戻す
+                storeManager.setActiveStore(store1.id);
+
+                showStatus('テストデータの作成が完了しました', 'success');
+                showTestResults();
+
+            } catch (error) {
+                showStatus('テストデータ作成エラー: ' + error.message, 'error');
+            }
+        }
+
+        // 店舗別テストデータ作成
+        async function createStoreTestData(storeId, storeName) {
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth() + 1;
+
+            // 売上データ
+            dataManager.addRecord('sales', {
+                year: currentYear,
+                month: currentMonth,
+                amount: 500000 + Math.floor(Math.random() * 200000),
+                note: `${storeName}の売上データ1`
+            }, storeId);
+
+            dataManager.addRecord('sales', {
+                year: currentYear,
+                month: currentMonth - 1 > 0 ? currentMonth - 1 : 12,
+                amount: 450000 + Math.floor(Math.random() * 150000),
+                note: `${storeName}の売上データ2`
+            }, storeId);
+
+            // 仕入れデータ
+            dataManager.addRecord('purchases', {
+                year: currentYear,
+                month: currentMonth,
+                amount: 200000 + Math.floor(Math.random() * 100000),
+                manufacturer: `${storeName}仕入先A`,
+                note: `${storeName}の仕入れデータ1`
+            }, storeId);
+
+            // 固定費データ
+            dataManager.addRecord('fixedCosts', {
+                year: currentYear,
+                month: currentMonth,
+                category: '家賃',
+                amount: 100000 + Math.floor(Math.random() * 50000),
+                note: `${storeName}の家賃`
+            }, storeId);
+
+            dataManager.addRecord('fixedCosts', {
+                year: currentYear,
+                month: currentMonth,
+                category: '光熱費',
+                amount: 30000 + Math.floor(Math.random() * 20000),
+                note: `${storeName}の光熱費`
+            }, storeId);
+        }
+
+        // テスト結果表示
+        function showTestResults() {
+            const stores = storeManager.getStores();
+            const allData = dataManager.getAllData();
+            
+            let resultHTML = '<h3>作成されたテストデータ</h3>';
+            
+            resultHTML += '<h4>店舗一覧</h4><ul>';
+            stores.forEach(store => {
+                const recordCount = dataManager.getStoreRecordCount(store.id);
+                resultHTML += `<li><strong>${store.name}</strong> (ID: ${store.id.substring(0, 8)}...) - ${recordCount}件のデータ</li>`;
+            });
+            resultHTML += '</ul>';
+
+            resultHTML += '<h4>データ分布</h4>';
+            resultHTML += '<table class="data-table"><thead><tr><th>カテゴリー</th><th>総件数</th><th>店舗別内訳</th></tr></thead><tbody>';
+            
+            for (const category in allData) {
+                if (category === 'dataMoveHistory') continue;
+                
+                const totalCount = allData[category].length;
+                let storeBreakdown = '';
+                
+                stores.forEach(store => {
+                    const storeCount = allData[category].filter(record => record.storeId === store.id).length;
+                    if (storeCount > 0) {
+                        storeBreakdown += `${store.name}: ${storeCount}件 `;
+                    }
+                });
+                
+                resultHTML += `<tr><td>${getCategoryDisplayName(category)}</td><td>${totalCount}</td><td>${storeBreakdown}</td></tr>`;
+            }
+            
+            resultHTML += '</tbody></table>';
+
+            // 移動履歴があれば表示
+            const moveHistory = dataManager.getDataMoveHistory(10);
+            if (moveHistory.length > 0) {
+                resultHTML += '<h4>データ移動履歴</h4>';
+                resultHTML += '<table class="data-table"><thead><tr><th>日時</th><th>レコードID</th><th>カテゴリー</th><th>移動元→移動先</th></tr></thead><tbody>';
+                
+                moveHistory.forEach(history => {
+                    const timestamp = new Date(history.movedAt).toLocaleString('ja-JP');
+                    const fromStore = stores.find(s => s.id === history.fromStoreId)?.name || '不明';
+                    const toStore = stores.find(s => s.id === history.toStoreId)?.name || '不明';
+                    
+                    resultHTML += `<tr><td>${timestamp}</td><td>${history.recordId.substring(0, 8)}...</td><td>${getCategoryDisplayName(history.category)}</td><td>${fromStore} → ${toStore}</td></tr>`;
+                });
+                
+                resultHTML += '</tbody></table>';
+            }
+
+            document.getElementById('test-results').innerHTML = resultHTML;
+        }
+
+        // テストデータクリア
+        async function clearTestData() {
+            try {
+                showStatus('テストデータをクリア中...', 'info');
+                
+                // 全データをリセット
+                dataManager.resetAllData();
+                
+                // 全店舗を削除
+                const stores = storeManager.getStores();
+                for (const store of stores) {
+                    await storeManager.deleteStore(store.id);
+                }
+
+                // 移動履歴もクリア
+                localStorage.removeItem('kaikei-data-move-history');
+
+                showStatus('テストデータをクリアしました', 'success');
+                document.getElementById('test-results').innerHTML = '<p>テストデータがクリアされました。</p>';
+
+            } catch (error) {
+                showStatus('テストデータクリアエラー: ' + error.message, 'error');
+            }
+        }
+
+        // ステータス表示
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('test-status');
+            statusDiv.className = `${type}-message`;
+            statusDiv.textContent = message;
+            
+            // 3秒後に消去
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = '';
+            }, 3000);
+        }
+
+        // カテゴリー表示名取得
+        function getCategoryDisplayName(category) {
+            const names = {
+                sales: '売上',
+                purchases: '仕入れ',
+                fixedCosts: '固定費',
+                variableCosts: '変動費',
+                laborCosts: '人件費',
+                consumptionTax: '消費税',
+                monthlyPayments: '月次支払い',
+                manufacturerDeposits: 'メーカー預り金'
+            };
+            return names[category] || category;
+        }
+    </script>
+</body>
+</html>

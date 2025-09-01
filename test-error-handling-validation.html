@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>エラーハンドリング・バリデーション強化テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+    <style>
+        .test-section {
+            margin: 2rem;
+            padding: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .test-button {
+            margin: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background-color: #0056b3;
+        }
+        .test-result {
+            margin: 1rem 0;
+            padding: 1rem;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>エラーハンドリング・バリデーション強化テスト</h1>
+        </header>
+
+        <div class="test-section">
+            <h2>1. 店舗未選択エラーハンドリングテスト</h2>
+            <p>店舗が選択されていない状態でデータ入力を試行します。</p>
+            <button class="test-button" onclick="testStoreNotSelected()">店舗未選択エラーテスト</button>
+            <button class="test-button" onclick="testNoStoresRegistered()">店舗未登録エラーテスト</button>
+            <div id="store-test-result" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. 存在しない店舗ID自動復旧テスト</h2>
+            <p>存在しない店舗IDが設定された場合の自動復旧機能をテストします。</p>
+            <button class="test-button" onclick="testInvalidStoreId()">無効店舗ID復旧テスト</button>
+            <button class="test-button" onclick="testAutoRecovery()">自動復旧機能テスト</button>
+            <div id="recovery-test-result" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. データ移動時重複チェックテスト</h2>
+            <p>データ移動時の重複チェックと確認ダイアログをテストします。</p>
+            <button class="test-button" onclick="testDataMoveDuplicate()">重複データ移動テスト</button>
+            <button class="test-button" onclick="testDataMoveValidation()">移動バリデーションテスト</button>
+            <div id="duplicate-test-result" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. 店舗データバリデーション強化テスト</h2>
+            <p>店舗データの詳細バリデーション機能をテストします。</p>
+            <button class="test-button" onclick="testStoreValidation()">店舗バリデーションテスト</button>
+            <button class="test-button" onclick="testSecurityValidation()">セキュリティバリデーションテスト</button>
+            <div id="validation-test-result" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>5. 統合エラーハンドリングテスト</h2>
+            <p>全体的なエラーハンドリング機能をテストします。</p>
+            <button class="test-button" onclick="runAllErrorTests()">全エラーテスト実行</button>
+            <button class="test-button" onclick="resetTestEnvironment()">テスト環境リセット</button>
+            <div id="integration-test-result" class="test-result"></div>
+        </div>
+    </div>
+
+    <!-- 必要なJSファイルを読み込み -->
+    <script src="kaikei/js/store-manager.js"></script>
+    <script src="kaikei/js/data-manager.js"></script>
+    <script src="kaikei/js/ui-manager.js"></script>
+    <script src="kaikei/js/chart-manager.js"></script>
+
+    <script>
+        // テスト用のグローバル変数
+        let testStoreManager;
+        let testDataManager;
+        let testUIManager;
+
+        // テスト環境の初期化
+        function initializeTestEnvironment() {
+            try {
+                testStoreManager = new StoreManager();
+                testDataManager = new DataManager();
+                testUIManager = new UIManager(testDataManager);
+                
+                // グローバルに設定（既存コードとの互換性のため）
+                window.storeManager = testStoreManager;
+                window.dataManager = testDataManager;
+                window.uiManager = testUIManager;
+                
+                return true;
+            } catch (error) {
+                console.error('テスト環境初期化エラー:', error);
+                return false;
+            }
+        }
+
+        // 1. 店舗未選択エラーハンドリングテスト
+        async function testStoreNotSelected() {
+            const resultDiv = document.getElementById('store-test-result');
+            
+            try {
+                // テスト環境初期化
+                if (!initializeTestEnvironment()) {
+                    throw new Error('テスト環境の初期化に失敗しました');
+                }
+                
+                await testStoreManager.loadStoreData();
+                
+                // アクティブ店舗をクリア
+                testStoreManager.storeData.activeStoreId = null;
+                
+                // データ入力を試行（エラーが発生するはず）
+                try {
+                    testDataManager.addRecord('sales', {
+                        year: 2024,
+                        month: 1,
+                        amount: 100000,
+                        note: 'テストデータ'
+                    });
+                    
+                    resultDiv.innerHTML = '<div class="error">❌ エラーが発生しませんでした（期待されるエラー）</div>';
+                } catch (error) {
+                    if (error.message.includes('店舗が選択されていません')) {
+                        resultDiv.innerHTML = '<div class="success">✅ 店舗未選択エラーが正しく検出されました</div>';
+                    } else {
+                        resultDiv.innerHTML = `<div class="error">❌ 予期しないエラー: ${error.message}</div>`;
+                    }
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ テスト実行エラー: ${error.message}</div>`;
+            }
+        }
+
+        // 店舗未登録エラーテスト
+        async function testNoStoresRegistered() {
+            const resultDiv = document.getElementById('store-test-result');
+            
+            try {
+                // テスト環境初期化
+                if (!initializeTestEnvironment()) {
+                    throw new Error('テスト環境の初期化に失敗しました');
+                }
+                
+                // 店舗データをクリア
+                testStoreManager.storeData.stores = [];
+                testStoreManager.storeData.activeStoreId = null;
+                
+                // データ入力を試行（エラーが発生するはず）
+                try {
+                    testDataManager.addRecord('sales', {
+                        year: 2024,
+                        month: 1,
+                        amount: 100000,
+                        note: 'テストデータ'
+                    });
+                    
+                    resultDiv.innerHTML += '<div class="error">❌ 店舗未登録エラーが発生しませんでした</div>';
+                } catch (error) {
+                    if (error.message.includes('店舗が登録されていません')) {
+                        resultDiv.innerHTML += '<div class="success">✅ 店舗未登録エラーが正しく検出されました</div>';
+                    } else {
+                        resultDiv.innerHTML += `<div class="error">❌ 予期しないエラー: ${error.message}</div>`;
+                    }
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="error">❌ テスト実行エラー: ${error.message}</div>`;
+            }
+        }
+
+        // 2. 無効店舗ID復旧テスト
+        async function testInvalidStoreId() {
+            const resultDiv = document.getElementById('recovery-test-result');
+            
+            try {
+                // テスト環境初期化
+                if (!initializeTestEnvironment()) {
+                    throw new Error('テスト環境の初期化に失敗しました');
+                }
+                
+                await testStoreManager.loadStoreData();
+                
+                // 存在しない店舗IDを設定
+                testStoreManager.storeData.activeStoreId = 'invalid-store-id';
+                
+                // アクティブ店舗取得を試行（自動復旧が発生するはず）
+                const activeStore = testStoreManager.getActiveStore();
+                
+                if (activeStore && activeStore.id !== 'invalid-store-id') {
+                    resultDiv.innerHTML = '<div class="success">✅ 無効店舗IDの自動復旧が成功しました</div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="error">❌ 自動復旧が機能しませんでした</div>';
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ テスト実行エラー: ${error.message}</div>`;
+            }
+        }
+
+        // 自動復旧機能テスト
+        async function testAutoRecovery() {
+            const resultDiv = document.getElementById('recovery-test-result');
+            
+            try {
+                // テスト環境初期化
+                if (!initializeTestEnvironment()) {
+                    throw new Error('テスト環境の初期化に失敗しました');
+                }
+                
+                await testStoreManager.loadStoreData();
+                
+                // 自動復旧イベントリスナーを設定
+                let recoveryEventFired = false;
+                document.addEventListener('storeAutoRecovered', (event) => {
+                    recoveryEventFired = true;
+                    console.log('自動復旧イベント受信:', event.detail);
+                });
+                
+                // 存在しない店舗IDを設定して自動復旧をトリガー
+                testStoreManager.storeData.activeStoreId = 'non-existent-id';
+                const recoveredStore = testStoreManager.autoRecoverActiveStore();
+                
+                if (recoveredStore && recoveryEventFired) {
+                    resultDiv.innerHTML += '<div class="success">✅ 自動復旧機能とイベント通知が正常に動作しました</div>';
+                } else {
+                    resultDiv.innerHTML += '<div class="warning">⚠️ 自動復旧は動作しましたが、イベント通知に問題があります</div>';
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="error">❌ テスト実行エラー: ${error.message}</div>`;
+            }
+        }
+
+        // 3. データ移動重複チェックテスト
+        async function testDataMoveDuplicate() {
+            const resultDiv = document.getElementById('duplicate-test-result');
+            
+            try {
+                // テスト環境初期化
+                if (!initializeTestEnvironment()) {
+                    throw new Error('テスト環境の初期化に失敗しました');
+                }
+                
+                await testStoreManager.loadStoreData();
+                await testDataManager.loadData();
+                
+                // テスト用店舗を2つ作成
+                const store1 = testStoreManager.addStore({
+                    name: 'テスト店舗1',
+                    address: 'テスト住所1',
+                    openDate: '2024-01-01',
+                    note: 'テスト用'
+                });
+                
+                const store2 = testStoreManager.addStore({
+                    name: 'テスト店舗2',
+                    address: 'テスト住所2',
+                    openDate: '2024-01-01',
+                    note: 'テスト用'
+                });
+                
+                // 店舗1にテストデータを追加
+                testStoreManager.setActiveStore(store1.id);
+                const record1 = testDataManager.addRecord('sales', {
+                    year: 2024,
+                    month: 1,
+                    amount: 100000,
+                    note: 'テスト売上1'
+                });
+                
+                // 店舗2にも同じ年月のデータを追加（重複状況を作成）
+                testStoreManager.setActiveStore(store2.id);
+                testDataManager.addRecord('sales', {
+                    year: 2024,
+                    month: 1,
+                    amount: 200000,
+                    note: 'テスト売上2'
+                });
+                
+                // 重複確認イベントリスナーを設定
+                let duplicateEventFired = false;
+                document.addEventListener('dataMoveConfirmRequired', (event) => {
+                    duplicateEventFired = true;
+                    console.log('重複確認イベント受信:', event.detail);
+                });
+                
+                // データ移動を試行（重複確認が発生するはず）
+                try {
+                    await testDataManager.moveRecordToStore('sales', record1.id, store2.id);
+                    resultDiv.innerHTML = '<div class="error">❌ 重複確認が発生しませんでした</div>';
+                } catch (error) {
+                    if (error.message === 'DUPLICATE_CONFIRMATION_REQUIRED' && duplicateEventFired) {
+                        resultDiv.innerHTML = '<div class="success">✅ データ移動時の重複チェックが正常に動作しました</div>';
+                    } else {
+                        resultDiv.innerHTML = `<div class="error">❌ 予期しないエラー: ${error.message}</div>`;
+                    }
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ テスト実行エラー: ${error.message}</div>`;
+            }
+        }
+
+        // データ移動バリデーションテスト
+        async function testDataMoveValidation() {
+            const resultDiv = document.getElementById('duplicate-test-result');
+            
+            try {
+                // テスト環境初期化
+                if (!initializeTestEnvironment()) {
+                    throw new Error('テスト環境の初期化に失敗しました');
+                }
+                
+                await testStoreManager.loadStoreData();
+                await testDataManager.loadData();
+                
+                // テスト用店舗を作成
+                const store1 = testStoreManager.addStore({
+                    name: 'バリデーションテスト店舗1',
+                    address: 'テスト住所',
+                    openDate: '2024-01-01',
+                    note: 'テスト用'
+                });
+                
+                // テストデータを追加
+                testStoreManager.setActiveStore(store1.id);
+                const record = testDataManager.addRecord('sales', {
+                    year: 2024,
+                    month: 1,
+                    amount: 100000,
+                    note: 'バリデーションテスト'
+                });
+                
+                // 同じ店舗への移動を試行（エラーが発生するはず）
+                try {
+                    await testDataManager.moveRecordToStore('sales', record.id, store1.id);
+                    resultDiv.innerHTML += '<div class="error">❌ 同一店舗移動エラーが発生しませんでした</div>';
+                } catch (error) {
+                    if (error.message.includes('同じ店舗への移動はできません')) {
+                        resultDiv.innerHTML += '<div class="success">✅ 同一店舗移動バリデーションが正常に動作しました</div>';
+                    } else {
+                        resultDiv.innerHTML += `<div class="error">❌ 予期しないエラー: ${error.message}</div>`;
+                    }
+                }
+                
+                // 存在しない店舗への移動を試行
+                try {
+                    await testDataManager.moveRecordToStore('sales', record.id, 'non-existent-store');
+                    resultDiv.innerHTML += '<div class="error">❌ 存在しない店舗エラーが発生しませんでした</div>';
+                } catch (error) {
+                    if (error.message.includes('移動先店舗が見つかりません')) {
+                        resultDiv.innerHTML += '<div class="success">✅ 存在しない店舗バリデーションが正常に動作しました</div>';
+                    } else {
+                        resultDiv.innerHTML += `<div class="error">❌ 予期しないエラー: ${error.message}</div>`;
+                    }
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="error">❌ テスト実行エラー: ${error.message}</div>`;
+            }
+        }
+
+        // 4. 店舗データバリデーション強化テスト
+        function testStoreValidation() {
+            const resultDiv = document.getElementById('validation-test-result');
+            
+            try {
+                // テスト環境初期化
+                if (!initializeTestEnvironment()) {
+                    throw new Error('テスト環境の初期化に失敗しました');
+                }
+                
+                let testResults = [];
+                
+                // 空の店舗名テスト
+                const emptyNameResult = StoreValidator.validateStoreData({ name: '' });
+                if (!emptyNameResult.isValid && emptyNameResult.errors.some(e => e.includes('店舗名は必須'))) {
+                    testResults.push('✅ 空の店舗名バリデーション');
+                } else {
+                    testResults.push('❌ 空の店舗名バリデーション');
+                }
+                
+                // 長すぎる店舗名テスト
+                const longNameResult = StoreValidator.validateStoreData({ 
+                    name: 'a'.repeat(51) 
+                });
+                if (!longNameResult.isValid && longNameResult.errors.some(e => e.includes('50文字以内'))) {
+                    testResults.push('✅ 長すぎる店舗名バリデーション');
+                } else {
+                    testResults.push('❌ 長すぎる店舗名バリデーション');
+                }
+                
+                // 特殊文字テスト
+                const specialCharResult = StoreValidator.validateStoreData({ 
+                    name: 'テスト<script>' 
+                });
+                if (!specialCharResult.isValid && specialCharResult.errors.some(e => e.includes('使用できない文字'))) {
+                    testResults.push('✅ 特殊文字バリデーション');
+                } else {
+                    testResults.push('❌ 特殊文字バリデーション');
+                }
+                
+                // 日付形式テスト
+                const invalidDateResult = StoreValidator.validateStoreData({ 
+                    name: 'テスト店舗',
+                    openDate: '2024-13-01' // 無効な月
+                });
+                if (!invalidDateResult.isValid && invalidDateResult.errors.some(e => e.includes('日付の形式'))) {
+                    testResults.push('✅ 無効日付バリデーション');
+                } else {
+                    testResults.push('❌ 無効日付バリデーション');
+                }
+                
+                // 正常データテスト
+                const validResult = StoreValidator.validateStoreData({
+                    name: 'テスト店舗',
+                    address: 'テスト住所',
+                    openDate: '2024-01-01',
+                    note: 'テスト備考'
+                });
+                if (validResult.isValid) {
+                    testResults.push('✅ 正常データバリデーション');
+                } else {
+                    testResults.push('❌ 正常データバリデーション');
+                }
+                
+                resultDiv.innerHTML = testResults.map(result => 
+                    `<div class="${result.startsWith('✅') ? 'success' : 'error'}">${result}</div>`
+                ).join('');
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ テスト実行エラー: ${error.message}</div>`;
+            }
+        }
+
+        // セキュリティバリデーションテスト
+        function testSecurityValidation() {
+            const resultDiv = document.getElementById('validation-test-result');
+            
+            try {
+                let testResults = [];
+                
+                // SQLインジェクション対策テスト
+                const sqlResult = StoreValidator.validateStoreData({
+                    name: "テスト'; DROP TABLE stores; --"
+                });
+                if (!sqlResult.isValid && sqlResult.errors.some(e => e.includes('不正な文字列'))) {
+                    testResults.push('✅ SQLインジェクション対策');
+                } else {
+                    testResults.push('❌ SQLインジェクション対策');
+                }
+                
+                // XSS対策テスト
+                const xssResult = StoreValidator.validateStoreData({
+                    name: 'テスト店舗',
+                    note: '<script>alert("XSS")</script>'
+                });
+                if (!xssResult.isValid && xssResult.errors.some(e => e.includes('スクリプトコード'))) {
+                    testResults.push('✅ XSS対策');
+                } else {
+                    testResults.push('❌ XSS対策');
+                }
+                
+                resultDiv.innerHTML += testResults.map(result => 
+                    `<div class="${result.startsWith('✅') ? 'success' : 'error'}">${result}</div>`
+                ).join('');
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="error">❌ テスト実行エラー: ${error.message}</div>`;
+            }
+        }
+
+        // 5. 統合エラーハンドリングテスト
+        async function runAllErrorTests() {
+            const resultDiv = document.getElementById('integration-test-result');
+            resultDiv.innerHTML = '<div class="warning">⏳ 全エラーテストを実行中...</div>';
+            
+            try {
+                // 各テストを順次実行
+                await testStoreNotSelected();
+                await testNoStoresRegistered();
+                await testInvalidStoreId();
+                await testAutoRecovery();
+                await testDataMoveDuplicate();
+                await testDataMoveValidation();
+                testStoreValidation();
+                testSecurityValidation();
+                
+                resultDiv.innerHTML = '<div class="success">✅ 全エラーハンドリングテストが完了しました。各セクションの結果を確認してください。</div>';
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 統合テスト実行エラー: ${error.message}</div>`;
+            }
+        }
+
+        // テスト環境リセット
+        function resetTestEnvironment() {
+            const resultDiv = document.getElementById('integration-test-result');
+            
+            try {
+                // ローカルストレージをクリア
+                localStorage.clear();
+                
+                // グローバル変数をリセット
+                window.storeManager = null;
+                window.dataManager = null;
+                window.uiManager = null;
+                
+                // テスト結果をクリア
+                document.querySelectorAll('.test-result').forEach(div => {
+                    div.innerHTML = '';
+                });
+                
+                resultDiv.innerHTML = '<div class="success">✅ テスト環境をリセットしました</div>';
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ リセットエラー: ${error.message}</div>`;
+            }
+        }
+
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('エラーハンドリング・バリデーション強化テストページが読み込まれました');
+        });
+    </script>
+</body>
+</html>

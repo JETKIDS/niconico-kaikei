@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>その他費用削除テスト</title>
+    <link rel="stylesheet" href="kaikei/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>その他費用削除テスト</h1>
+        </header>
+        
+        <main>
+            <div id="content-area">
+                <h2>その他費用が削除されたことの確認</h2>
+                
+                <div class="test-section">
+                    <h3>ナビゲーションメニュー確認</h3>
+                    <p>メインアプリケーションのナビゲーションメニューに「その他費用」タブが表示されていないことを確認してください。</p>
+                    <button class="btn btn-primary" onclick="openMainApp()">メインアプリを開く</button>
+                </div>
+                
+                <div class="test-section">
+                    <h3>データ構造確認</h3>
+                    <button class="btn btn-secondary" onclick="checkDataStructure()">データ構造を確認</button>
+                    <div id="data-structure-result"></div>
+                </div>
+                
+                <div class="test-section">
+                    <h3>カテゴリー一覧確認</h3>
+                    <button class="btn btn-secondary" onclick="checkCategories()">利用可能なカテゴリーを確認</button>
+                    <div id="categories-result"></div>
+                </div>
+                
+                <div class="test-section">
+                    <h3>CSVエクスポート確認</h3>
+                    <button class="btn btn-secondary" onclick="checkCSVCategories()">CSVカテゴリーマッピングを確認</button>
+                    <div id="csv-categories-result"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="kaikei/js/data-manager.js"></script>
+    <script src="kaikei/js/ui-manager.js"></script>
+    <script src="kaikei/js/chart-manager.js"></script>
+    <script>
+        let dataManager;
+        let uiManager;
+        let chartManager;
+        
+        // 初期化
+        async function init() {
+            dataManager = new DataManager();
+            await dataManager.loadData();
+            uiManager = new UIManager(dataManager);
+            chartManager = new ChartManager(dataManager);
+        }
+        
+        // メインアプリを開く
+        function openMainApp() {
+            window.open('kaikei/index.html', '_blank');
+        }
+        
+        // データ構造確認
+        function checkDataStructure() {
+            const dataStructure = DataModels.getDataStructure();
+            const categories = Object.keys(dataStructure);
+            
+            let resultHTML = '<h4>利用可能なデータカテゴリー:</h4><ul>';
+            categories.forEach(category => {
+                resultHTML += `<li>${category}</li>`;
+            });
+            resultHTML += '</ul>';
+            
+            if (categories.includes('otherExpenses')) {
+                resultHTML += '<div class="error-message">❌ otherExpensesがまだ存在しています</div>';
+            } else {
+                resultHTML += '<div class="success-message">✅ otherExpensesが正常に削除されました</div>';
+            }
+            
+            document.getElementById('data-structure-result').innerHTML = resultHTML;
+        }
+        
+        // カテゴリー確認
+        function checkCategories() {
+            const fieldDefinitions = DataModels.getFieldDefinitions();
+            const categories = Object.keys(fieldDefinitions);
+            
+            let resultHTML = '<h4>フィールド定義があるカテゴリー:</h4><ul>';
+            categories.forEach(category => {
+                resultHTML += `<li>${category}</li>`;
+            });
+            resultHTML += '</ul>';
+            
+            if (categories.includes('otherExpenses')) {
+                resultHTML += '<div class="error-message">❌ otherExpensesのフィールド定義がまだ存在しています</div>';
+            } else {
+                resultHTML += '<div class="success-message">✅ otherExpensesのフィールド定義が正常に削除されました</div>';
+            }
+            
+            document.getElementById('categories-result').innerHTML = resultHTML;
+        }
+        
+        // CSVカテゴリー確認
+        function checkCSVCategories() {
+            // CSVエクスポート機能をテスト
+            try {
+                const testData = {
+                    sales: [],
+                    purchases: [],
+                    fixedCosts: [],
+                    laborCosts: [],
+                    consumptionTax: [],
+                    monthlyPayments: [],
+                    manufacturerDeposits: []
+                };
+                
+                // generateCSVContent関数を直接呼び出すことはできないので、
+                // 代わりにexportToCSVを使用してテスト
+                const result = dataManager.exportToCSV({
+                    exportType: 'all'
+                });
+                
+                let resultHTML = '<div class="success-message">✅ CSVエクスポート機能が正常に動作しています</div>';
+                resultHTML += `<p>ファイル名: ${result.filename}</p>`;
+                resultHTML += `<p>レコード数: ${result.recordCount}件</p>`;
+                resultHTML += '<p>CSVファイルを確認して、「その他費用」カテゴリーが含まれていないことを確認してください。</p>';
+                
+                document.getElementById('csv-categories-result').innerHTML = resultHTML;
+                
+            } catch (error) {
+                document.getElementById('csv-categories-result').innerHTML = 
+                    `<div class="error-message">❌ CSVエクスポートエラー: ${error.message}</div>`;
+            }
+        }
+        
+        // 初期化実行
+        document.addEventListener('DOMContentLoaded', async () => {
+            await init();
+        });
+    </script>
+    
+    <style>
+        .test-section {
+            margin: 2rem 0;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .test-section h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .success-message, .error-message {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        ul {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+        
+        li {
+            margin: 0.25rem 0;
+        }
+    </style>
+</body>
+</html>
