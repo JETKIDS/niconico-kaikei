@@ -410,7 +410,7 @@ class ChartManager {
             // 各月のデータを計算
             for (let month = 1; month <= 12; month++) {
                 const monthlyBalance = this.calculateMonthlyBalance(year, month);
-                
+
                 monthlyData.push({
                     month: month,
                     income: monthlyBalance.income,
@@ -422,16 +422,47 @@ class ChartManager {
                 totalExpense += monthlyBalance.expense;
             }
 
+            // 赤字月と黒字月をカウント
+            const deficitMonthsCount = monthlyData.filter(m => m.balance < 0).length;
+            const profitableMonthsCount = monthlyData.filter(m => m.balance > 0).length;
+            const totalProfit = totalIncome - totalExpense;
+            const averageMonthlyProfit = totalProfit / 12;
+
             return {
+                year: year,
+                totalSales: totalIncome,
+                totalExpenses: totalExpense,
+                totalProfit: totalProfit,
+                averageMonthlyProfit: averageMonthlyProfit,
+                deficitMonthsCount: deficitMonthsCount,
+                profitableMonthsCount: profitableMonthsCount,
+                monthlyResults: monthlyData,
+                yearlyProfitMargin: totalIncome > 0 ? ((totalProfit / totalIncome) * 100) : 0,
+                // 後方互換性のため
                 income: totalIncome,
                 expense: totalExpense,
-                balance: totalIncome - totalExpense,
+                balance: totalProfit,
                 monthlyData: monthlyData,
-                profitMargin: totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome * 100) : 0
+                profitMargin: totalIncome > 0 ? ((totalProfit / totalIncome) * 100) : 0
             };
         } catch (error) {
             console.error('年間収支計算エラー:', error);
-            return { income: 0, expense: 0, balance: 0, monthlyData: [] };
+            return { 
+                year: year,
+                totalSales: 0,
+                totalExpenses: 0,
+                totalProfit: 0,
+                averageMonthlyProfit: 0,
+                deficitMonthsCount: 0,
+                profitableMonthsCount: 0,
+                monthlyResults: [],
+                yearlyProfitMargin: 0,
+                // 後方互換性のため
+                income: 0, 
+                expense: 0, 
+                balance: 0, 
+                monthlyData: [] 
+            };
         }
     }
 }
