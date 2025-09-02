@@ -411,15 +411,28 @@ class ChartManager {
             for (let month = 1; month <= 12; month++) {
                 const monthlyBalance = this.calculateMonthlyBalance(year, month);
 
+                // calculateMonthlyBalanceの戻り値から正しいプロパティを使用
+                const sales = monthlyBalance.sales || 0;
+                const totalExpenses = monthlyBalance.totalExpenses || 0;
+                const profit = monthlyBalance.profit || 0;
+                const profitMargin = sales > 0 ? (profit / sales * 100) : 0;
+                
                 monthlyData.push({
                     month: month,
-                    income: monthlyBalance.income,
-                    expense: monthlyBalance.expense,
-                    balance: monthlyBalance.balance
+                    // 既存の形式（後方互換性）
+                    income: sales,
+                    expense: totalExpenses,
+                    balance: profit,
+                    // UIManagerが期待する形式
+                    sales: sales,
+                    totalExpenses: totalExpenses,
+                    profit: profit,
+                    profitMargin: profitMargin,
+                    isDeficit: profit < 0
                 });
 
-                totalIncome += monthlyBalance.income;
-                totalExpense += monthlyBalance.expense;
+                totalIncome += sales;
+                totalExpense += totalExpenses;
             }
 
             // 赤字月と黒字月をカウント
@@ -447,7 +460,7 @@ class ChartManager {
             };
         } catch (error) {
             console.error('年間収支計算エラー:', error);
-            return { 
+            return {
                 year: year,
                 totalSales: 0,
                 totalExpenses: 0,
@@ -458,10 +471,10 @@ class ChartManager {
                 monthlyResults: [],
                 yearlyProfitMargin: 0,
                 // 後方互換性のため
-                income: 0, 
-                expense: 0, 
-                balance: 0, 
-                monthlyData: [] 
+                income: 0,
+                expense: 0,
+                balance: 0,
+                monthlyData: []
             };
         }
     }
