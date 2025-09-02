@@ -153,6 +153,11 @@ class VersionManager {
      * GitHub Actions で生成された履歴を読み込み
      */
     async loadGitHubHistory() {
+        // file://プロトコルの場合はスキップ
+        if (window.location.protocol === 'file:') {
+            return [];
+        }
+        
         try {
             const response = await fetch('./version-history.json');
             if (response.ok) {
@@ -171,6 +176,11 @@ class VersionManager {
      * GitHub Actionsからのバージョン更新をチェック
      */
     async checkForGitHubUpdate() {
+        // file://プロトコルの場合はスキップ
+        if (window.location.protocol === 'file:') {
+            return;
+        }
+        
         try {
             const response = await fetch('./version.json');
             if (response.ok) {

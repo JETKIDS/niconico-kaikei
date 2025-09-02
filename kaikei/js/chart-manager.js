@@ -391,6 +391,49 @@ class ChartManager {
             return [];
         }
     }
+
+    /**
+     * 年間収支計算
+     */
+    calculateYearlyBalance(year) {
+        try {
+            if (!this.dataManager) {
+                console.warn('DataManager が利用できません');
+                return { income: 0, expense: 0, balance: 0, monthlyData: [] };
+            }
+
+            const activeStoreId = window.storeManager ? window.storeManager.getActiveStoreId() : null;
+            const monthlyData = [];
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            // 各月のデータを計算
+            for (let month = 1; month <= 12; month++) {
+                const monthlyBalance = this.calculateMonthlyBalance(year, month);
+                
+                monthlyData.push({
+                    month: month,
+                    income: monthlyBalance.income,
+                    expense: monthlyBalance.expense,
+                    balance: monthlyBalance.balance
+                });
+
+                totalIncome += monthlyBalance.income;
+                totalExpense += monthlyBalance.expense;
+            }
+
+            return {
+                income: totalIncome,
+                expense: totalExpense,
+                balance: totalIncome - totalExpense,
+                monthlyData: monthlyData,
+                profitMargin: totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome * 100) : 0
+            };
+        } catch (error) {
+            console.error('年間収支計算エラー:', error);
+            return { income: 0, expense: 0, balance: 0, monthlyData: [] };
+        }
+    }
 }
 
 // ChartManagerファイル読み込み確認
