@@ -148,6 +148,10 @@
             onload="console.log('✓ data-manager.js loaded'); console.log('DataManager check:', typeof DataManager); window.scriptLoadStatus.dataManager = true;" 
             onerror="handleScriptError('data-manager.js', event)"></script>
     
+    <script defer src="js/backup-manager.js" 
+            onload="console.log('✓ backup-manager.js loaded'); window.scriptLoadStatus.backupManager = true;" 
+            onerror="handleScriptError('backup-manager.js', event)"></script>
+    
     <script defer src="js/store-manager.js" 
             onload="console.log('✓ store-manager.js loaded'); window.scriptLoadStatus.storeManager = true;" 
             onerror="handleScriptError('store-manager.js', event)"></script>

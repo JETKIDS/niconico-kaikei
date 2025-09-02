@@ -416,7 +416,7 @@ class ChartManager {
                 const totalExpenses = monthlyBalance.totalExpenses || 0;
                 const profit = monthlyBalance.profit || 0;
                 const profitMargin = sales > 0 ? (profit / sales * 100) : 0;
-                
+
                 monthlyData.push({
                     month: month,
                     // 既存の形式（後方互換性）

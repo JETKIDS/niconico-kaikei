@@ -113,6 +113,16 @@ class App {
             console.log('チャートマネージャーを初期化中...');
             this.chartManager = new ChartManager(this.dataManager);
             
+            // バックアップマネージャー初期化
+            console.log('バックアップマネージャーを初期化中...');
+            if (typeof BackupManager !== 'undefined') {
+                this.backupManager = new BackupManager(this.dataManager, this.storeManager);
+                window.backupManager = this.backupManager;
+                console.log('✓ BackupManager初期化完了');
+            } else {
+                console.warn('BackupManagerクラスが見つかりません');
+            }
+
             // グローバル変数として設定（他のスクリプトからアクセス可能にする）
             window.uiManager = this.uiManager;
             window.chartManager = this.chartManager;
@@ -612,7 +622,79 @@ class App {
             }
         }, 5000);
     }
+
+    /**
+     * セクション表示
+     */
+    showSection(section) {
+        if (!this.uiManager) {
+            console.warn('UIManagerが初期化されていません');
+            return;
+        }
+
+        this.currentSection = section;
+
+        switch (section) {
+            case 'sales':
+                this.uiManager.showSalesSection();
+                break;
+            case 'purchases':
+                this.uiManager.showPurchasesSection();
+                break;
+            case 'fixed-costs':
+                this.uiManager.showFixedCostsSection();
+                break;
+            case 'variable-costs':
+                this.uiManager.showVariableCostsSection();
+                break;
+            case 'labor-costs':
+                this.uiManager.showLaborCostsSection();
+                break;
+            case 'consumption-tax':
+                this.uiManager.showConsumptionTaxSection();
+                break;
+            case 'monthly-payments':
+                this.uiManager.showMonthlyPaymentsSection();
+                break;
+            case 'manufacturer-deposits':
+                this.uiManager.showManufacturerDepositsSection();
+                break;
+            case 'reports':
+                this.uiManager.showReportsSection();
+                break;
+            case 'stores':
+                this.uiManager.showStoresSection();
+                break;
+            case 'backup':
+                this.uiManager.showBackupSection();
+                break;
+            default:
+                console.warn('未知のセクション:', section);
+                this.uiManager.showSalesSection();
+        }
+    }
 }
+
+// ナビゲーション処理
+document.addEventListener('DOMContentLoaded', () => {
+    // ナビゲーションリンクのクリック処理
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('nav-link')) {
+            e.preventDefault();
+            
+            const section = e.target.getAttribute('data-section');
+            if (section && window.app) {
+                window.app.showSection(section);
+                
+                // アクティブ状態の更新
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('active');
+                });
+                e.target.classList.add('active');
+            }
+        }
+    });
+});
 
 // アプリケーション開始
 document.addEventListener('DOMContentLoaded', async () => {

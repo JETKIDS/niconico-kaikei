@@ -4815,6 +4815,327 @@ class UIManager {
             this.recordDataMoveHistory(category, recordIds, targetStoreId, reason, movedCount, errors);
 
             // 結果表示
+        }
+    }
+
+    /**
+     * データ管理セクション表示
+     */
+    showBackupSection() {
+        const contentArea = document.getElementById('content-area');
+        if (!contentArea) return;
+
+        const html = `
+            <div class="backup-section">
+                <div class="section-header">
+                    <h2>データ管理</h2>
+                    <p>データのバックアップ、エクスポート、インポート機能</p>
+                </div>
+
+                <div class="backup-grid">
+                    <!-- エクスポート機能 -->
+                    <div class="backup-card">
+                        <div class="card-header">
+                            <h3>📤 データエクスポート</h3>
+                            <p>全データをJSONファイルとしてダウンロード</p>
+                        </div>
+                        <div class="card-content">
+                            <button class="btn btn-primary" onclick="uiManager.exportData()">
+                                データをエクスポート
+                            </button>
+                            <div class="export-info">
+                                <small>売上、仕入れ、店舗情報などすべてのデータが含まれます</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- インポート機能 -->
+                    <div class="backup-card">
+                        <div class="card-header">
+                            <h3>📥 データインポート</h3>
+                            <p>JSONファイルからデータを読み込み</p>
+                        </div>
+                        <div class="card-content">
+                            <input type="file" id="import-file" accept=".json" style="display: none;" 
+                                   onchange="uiManager.handleImportFile(this)">
+                            <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">
+                                ファイルを選択
+                            </button>
+                            <div class="import-warning">
+                                <small>⚠️ インポート前に自動バックアップが作成されます</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 自動バックアップ -->
+                    <div class="backup-card">
+                        <div class="card-header">
+                            <h3>💾 手動バックアップ</h3>
+                            <p>現在のデータを手動でバックアップ</p>
+                        </div>
+                        <div class="card-content">
+                            <button class="btn btn-success" onclick="uiManager.createManualBackup()">
+                                バックアップ作成
+                            </button>
+                            <div class="backup-info">
+                                <small>ブラウザ内に安全に保存されます</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- バックアップ一覧 -->
+                    <div class="backup-card full-width">
+                        <div class="card-header">
+                            <h3>📋 バックアップ一覧</h3>
+                            <p>作成されたバックアップの管理</p>
+                        </div>
+                        <div class="card-content">
+                            <div id="backup-list">
+                                <!-- バックアップ一覧は動的に生成 -->
+                            </div>
+                            <button class="btn btn-outline" onclick="uiManager.refreshBackupList()">
+                                一覧を更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作結果表示エリア -->
+                <div id="backup-result" class="backup-result" style="display: none;">
+                    <!-- 結果メッセージが表示される -->
+                </div>
+            </div>
+        `;
+
+        contentArea.innerHTML = html;
+        
+        // バックアップ一覧を初期表示
+        this.refreshBackupList();
+    }
+
+    /**
+     * データエクスポート実行
+     */
+    async exportData() {
+        try {
+            if (!window.backupManager) {
+                throw new Error('BackupManagerが初期化されていません');
+            }
+
+            this.showBackupResult('データをエクスポート中...', 'info');
+            
+            const result = await window.backupManager.exportAllData();
+            
+            if (result.success) {
+                this.showBackupResult(
+                    `✓ エクスポート完了！<br>ファイル名: ${result.filename}<br>レコード数: ${result.recordCount}件`,
+                    'success'
+                );
+            } else {
+                throw new Error(result.error);
+            }
+            
+        } catch (error) {
+            console.error('エクスポートエラー:', error);
+            this.showBackupResult(`❌ エクスポートに失敗しました: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * インポートファイル処理
+     */
+    async handleImportFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        try {
+            if (!window.backupManager) {
+                throw new Error('BackupManagerが初期化されていません');
+            }
+
+            this.showBackupResult('データをインポート中...', 'info');
+            
+            const result = await window.backupManager.importData(file);
+            
+            if (result.success) {
+                let message = `✓ インポート完了！<br>インポート件数: ${result.importedRecords}件`;
+                
+                if (result.hasErrors && result.errors.length > 0) {
+                    message += `<br>⚠️ 一部エラー: ${result.errors.length}件`;
+                }
+                
+                this.showBackupResult(message, result.hasErrors ? 'warning' : 'success');
+                
+                // データが更新されたので画面を更新
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+                
+            } else {
+                throw new Error(result.error);
+            }
+            
+        } catch (error) {
+            console.error('インポートエラー:', error);
+            this.showBackupResult(`❌ インポートに失敗しました: ${error.message}`, 'error');
+        } finally {
+            // ファイル入力をリセット
+            input.value = '';
+        }
+    }
+
+    /**
+     * 手動バックアップ作成
+     */
+    async createManualBackup() {
+        try {
+            if (!window.backupManager) {
+                throw new Error('BackupManagerが初期化されていません');
+            }
+
+            this.showBackupResult('バックアップを作成中...', 'info');
+            
+            const result = await window.backupManager.createAutoBackup('manual');
+            
+            if (result.success) {
+                this.showBackupResult('✓ バックアップを作成しました', 'success');
+                this.refreshBackupList();
+            } else {
+                throw new Error(result.error);
+            }
+            
+        } catch (error) {
+            console.error('バックアップ作成エラー:', error);
+            this.showBackupResult(`❌ バックアップ作成に失敗しました: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * バックアップ一覧更新
+     */
+    refreshBackupList() {
+        const listContainer = document.getElementById('backup-list');
+        if (!listContainer || !window.backupManager) return;
+
+        const backups = window.backupManager.getBackupList();
+        
+        if (backups.length === 0) {
+            listContainer.innerHTML = '<p class="no-backups">バックアップがありません</p>';
+            return;
+        }
+
+        let html = '<div class="backup-table">';
+        html += `
+            <div class="backup-table-header">
+                <div>作成日時</div>
+                <div>種類</div>
+                <div>レコード数</div>
+                <div>操作</div>
+            </div>
+        `;
+
+        backups.forEach(backup => {
+            const date = new Date(backup.date);
+            const dateStr = date.toLocaleString('ja-JP');
+            const reasonText = backup.reason === 'manual' ? '手動' : 
+                              backup.reason === 'auto' ? '自動' : 
+                              backup.reason.includes('import') ? 'インポート前' :
+                              backup.reason.includes('restore') ? '復元前' : backup.reason;
+
+            html += `
+                <div class="backup-table-row">
+                    <div class="backup-date">${dateStr}</div>
+                    <div class="backup-reason">${reasonText}</div>
+                    <div class="backup-count">${backup.recordCount}件</div>
+                    <div class="backup-actions">
+                        <button class="btn btn-sm btn-primary" 
+                                onclick="uiManager.restoreFromBackup('${backup.key}')">
+                            復元
+                        </button>
+                        <button class="btn btn-sm btn-danger" 
+                                onclick="uiManager.deleteBackup('${backup.key}')">
+                            削除
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        listContainer.innerHTML = html;
+    }
+
+    /**
+     * バックアップから復元
+     */
+    async restoreFromBackup(backupKey) {
+        if (!confirm('現在のデータを選択したバックアップで置き換えますか？\n（現在のデータは自動的にバックアップされます）')) {
+            return;
+        }
+
+        try {
+            if (!window.backupManager) {
+                throw new Error('BackupManagerが初期化されていません');
+            }
+
+            this.showBackupResult('バックアップから復元中...', 'info');
+            
+            const result = await window.backupManager.restoreFromBackup(backupKey);
+            
+            if (result.success) {
+                this.showBackupResult('✓ 復元完了！ページを再読み込みします...', 'success');
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+                
+            } else {
+                throw new Error(result.error);
+            }
+            
+        } catch (error) {
+            console.error('復元エラー:', error);
+            this.showBackupResult(`❌ 復元に失敗しました: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * バックアップ削除
+     */
+    deleteBackup(backupKey) {
+        if (!confirm('このバックアップを削除しますか？')) {
+            return;
+        }
+
+        try {
+            localStorage.removeItem(backupKey);
+            this.showBackupResult('✓ バックアップを削除しました', 'success');
+            this.refreshBackupList();
+            
+        } catch (error) {
+            console.error('バックアップ削除エラー:', error);
+            this.showBackupResult(`❌ バックアップ削除に失敗しました: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * バックアップ結果表示
+     */
+    showBackupResult(message, type = 'info') {
+        const resultDiv = document.getElementById('backup-result');
+        if (!resultDiv) return;
+
+        resultDiv.className = `backup-result ${type}`;
+        resultDiv.innerHTML = message;
+        resultDiv.style.display = 'block';
+
+        // 成功・エラーメッセージは5秒後に自動で隠す
+        if (type === 'success' || type === 'error') {
+            setTimeout(() => {
+                resultDiv.style.display = 'none';
+            }, 5000);
+        }
+    }
             if (movedCount > 0) {
                 let successMessage = `${movedCount}件のデータを「${targetStore.name}」に移動しました`;
                 if (duplicateCount > 0) {
