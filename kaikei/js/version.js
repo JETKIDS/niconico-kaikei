@@ -3,13 +3,17 @@
  */
 class VersionManager {
     constructor() {
+        // GitHub Actionsで更新される場合はそちらを優先
         this.version = {
             major: 1,
             minor: 0,
-            patch: 0,
+            patch: 1, // 初回リリース後のパッチバージョン
             build: this.getBuildNumber()
         };
         this.lastUpdate = new Date().toISOString();
+        
+        // GitHub Actionsからの更新をチェック
+        this.checkForGitHubUpdate();
     }
 
     /**
@@ -161,6 +165,32 @@ class VersionManager {
             console.log('GitHub履歴ファイルが見つかりません（初回実行時は正常）');
         }
         return [];
+    }
+
+    /**
+     * GitHub Actionsからのバージョン更新をチェック
+     */
+    async checkForGitHubUpdate() {
+        try {
+            const response = await fetch('./version.json');
+            if (response.ok) {
+                const githubVersion = await response.json();
+                if (githubVersion.version) {
+                    // GitHub Actionsで生成されたバージョン情報を使用
+                    const [major, minor, patch] = githubVersion.version.replace('v', '').split('.').map(Number);
+                    this.version = {
+                        major: major || this.version.major,
+                        minor: minor || this.version.minor,
+                        patch: patch || this.version.patch,
+                        build: githubVersion.build || this.getBuildNumber()
+                    };
+                    this.lastUpdate = githubVersion.lastUpdate || this.lastUpdate;
+                    console.log('✓ GitHub Actionsからバージョン情報を更新:', githubVersion.version);
+                }
+            }
+        } catch (error) {
+            console.log('GitHub Actionsバージョンファイルが見つかりません（ローカル開発時は正常）');
+        }
     }
 
     /**
