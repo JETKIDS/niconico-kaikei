@@ -5139,29 +5139,7 @@ class UIManager {
             }, 5000);
         }
     }
-            if (movedCount > 0) {
-                let successMessage = `${movedCount}件のデータを「${targetStore.name}」に移動しました`;
-                if (duplicateCount > 0) {
-                    successMessage += `\n\n注意: ${duplicateCount}件で重複データが検出されました。`;
-                }
-                this.showMessage(successMessage, 'success');
-                
-                // 画面を再描画
-                this.showSection(this.currentSection);
-            }
-            
-            if (errors.length > 0) {
-                console.error('データ移動エラー:', errors);
-                this.showMessage(`${errors.length}件の移動に失敗しました`, 'error');
-            }
-
-            this.hideDataMoveDialog();
-
-        } catch (error) {
-            console.error('データ移動実行エラー:', error);
-            this.showMessage('データ移動に失敗しました: ' + error.message, 'error');
-        }
-    }
+}
 
     /**
      * データ移動時の重複確認ダイアログ表示
@@ -5437,5 +5415,55 @@ class UIManager {
             manufacturerDeposits: 'メーカー保証金'
         };
         return categoryNames[category] || category;
+    }
+}  
+              }, 2000);
+                
+            } else {
+                throw new Error(result.error);
+            }
+            
+        } catch (error) {
+            console.error('復元エラー:', error);
+            this.showBackupResult(`❌ 復元に失敗しました: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * バックアップ削除
+     */
+    deleteBackup(backupKey) {
+        if (!confirm('このバックアップを削除しますか？')) {
+            return;
+        }
+
+        try {
+            localStorage.removeItem(backupKey);
+            this.showBackupResult('✓ バックアップを削除しました', 'success');
+            this.refreshBackupList();
+            
+        } catch (error) {
+            console.error('バックアップ削除エラー:', error);
+            this.showBackupResult(`❌ バックアップ削除に失敗しました: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * バックアップ結果表示
+     */
+    showBackupResult(message, type = 'info') {
+        const resultDiv = document.getElementById('backup-result');
+        if (!resultDiv) return;
+
+        resultDiv.className = `backup-result ${type}`;
+        resultDiv.innerHTML = message;
+        resultDiv.style.display = 'block';
+
+        // 成功・エラーメッセージは5秒後に自動で隠す
+        if (type === 'success' || type === 'error') {
+            setTimeout(() => {
+                resultDiv.style.display = 'none';
+            }, 5000);
+        }
     }
 }
