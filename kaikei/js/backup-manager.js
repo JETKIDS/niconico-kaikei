@@ -132,13 +132,22 @@ class BackupManager {
      * バックアップ一覧取得
      */
     getBackupList() {
+        console.log('getBackupList called');
+        console.log('localStorage length:', localStorage.length);
+        console.log('backupPrefix:', this.backupPrefix);
+        
         const backups = [];
         
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
+            console.log('Checking key:', key);
+            
             if (key && key.startsWith(this.backupPrefix)) {
+                console.log('Found backup key:', key);
                 try {
                     const backupData = JSON.parse(localStorage.getItem(key));
+                    console.log('Backup data:', backupData);
+                    
                     backups.push({
                         key: key,
                         date: backupData.backupDate,
@@ -147,15 +156,40 @@ class BackupManager {
                         recordCount: this.countTotalRecords(backupData.data)
                     });
                 } catch (error) {
-                    console.warn('無効なバックアップデータ:', key);
+                    console.warn('無効なバックアップデータ:', key, error);
                 }
             }
         }
         
+        console.log('Found backups:', backups);
+        
         // 日付順でソート（新しい順）
         backups.sort((a, b) => new Date(b.date) - new Date(a.date));
         
+        console.log('Sorted backups:', backups);
         return backups;
+    }
+
+    /**
+     * デバッグ用：LocalStorageの内容を表示
+     */
+    debugLocalStorage() {
+        console.log('=== LocalStorage Debug ===');
+        console.log('Total items:', localStorage.length);
+        
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const value = localStorage.getItem(key);
+            console.log(`${i}: ${key} = ${value.substring(0, 100)}...`);
+        }
+        
+        console.log('=== Backup items only ===');
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(this.backupPrefix)) {
+                console.log(`Backup: ${key}`);
+            }
+        }
     }
 
     /**
@@ -211,16 +245,43 @@ class BackupManager {
             const categories = ['sales', 'purchases', 'fixedCosts', 'variableCosts', 
                               'laborCosts', 'consumptionTax', 'monthlyPayments', 'manufacturerDeposits'];
             
+            // データの場所を特定（新形式と旧形式の両方に対応）
+            let dataSource = importData.data || importData;
+            
             for (const category of categories) {
-                if (importData.data[category] && Array.isArray(importData.data[category])) {
-                    for (const record of importData.data[category]) {
+                if (dataSource[category] && Array.isArray(dataSource[category])) {
+                    console.log(`${category}カテゴリーのインポート開始: ${dataSource[category].length}件`);
+                    
+                    // 既存データを取得
+                    const existingRecords = this.dataManager.getDataByCategory(category);
+                    let skippedCount = 0;
+                    let updatedCount = 0;
+                    
+                    for (const record of dataSource[category]) {
                         try {
-                            await this.dataManager.addRecord(category, record);
-                            importedRecords++;
+                            // 重複チェック（ID、年月、金額、店舗IDで判定）
+                            const isDuplicate = existingRecords.some(existing => 
+                                existing.id === record.id || 
+                                (existing.year === record.year && 
+                                 existing.month === record.month && 
+                                 existing.amount === record.amount && 
+                                 existing.storeId === record.storeId)
+                            );
+                            
+                            if (isDuplicate) {
+                                console.log(`重複データをスキップ: ${category} - ${record.year}年${record.month}月 ${record.amount}円`);
+                                skippedCount++;
+                            } else {
+                                await this.dataManager.addRecord(category, record);
+                                importedRecords++;
+                            }
                         } catch (error) {
+                            console.error(`${category}レコードインポートエラー:`, error);
                             errors.push(`${category} レコード: ${error.message}`);
                         }
                     }
+                    
+                    console.log(`${category}カテゴリーのインポート完了 - 追加: ${dataSource[category].length - skippedCount}件, スキップ: ${skippedCount}件`);
                 }
             }
             
@@ -233,9 +294,17 @@ class BackupManager {
                 }
             }
             
+            // 重複スキップ数を計算
+            const totalRecords = categories.reduce((total, category) => {
+                return total + (dataSource[category] ? dataSource[category].length : 0);
+            }, 0);
+            const skippedRecords = totalRecords - importedRecords - errors.length;
+            
             return {
                 success: true,
                 importedRecords,
+                skippedRecords,
+                totalRecords,
                 errors,
                 hasErrors: errors.length > 0
             };
@@ -255,21 +324,53 @@ class BackupManager {
      */
     validateImportData(data) {
         const errors = [];
+        const warnings = [];
+        
+        console.log('検証中のデータ構造:', Object.keys(data));
+        console.log('データの詳細:', data);
         
         if (!data || typeof data !== 'object') {
             errors.push('データが無効です');
-            return { valid: false, errors };
+            return { valid: false, errors, warnings };
         }
         
-        if (!data.data || typeof data.data !== 'object') {
+        // 会計データの確認（より柔軟に）
+        let hasAccountingData = false;
+        if (data.data && typeof data.data === 'object') {
+            hasAccountingData = true;
+            console.log('新形式の会計データが見つかりました:', Object.keys(data.data));
+        } else {
+            // 直接カテゴリーがある場合もチェック（旧形式）
+            const categories = ['sales', 'purchases', 'fixedCosts', 'variableCosts', 
+                              'laborCosts', 'consumptionTax', 'monthlyPayments', 'manufacturerDeposits'];
+            const foundCategories = categories.filter(cat => data[cat] && Array.isArray(data[cat]));
+            if (foundCategories.length > 0) {
+                hasAccountingData = true;
+                console.log(`旧形式の会計データが見つかりました。カテゴリー: ${foundCategories.join(', ')}`);
+                warnings.push(`旧形式のデータファイルです。正常にインポートされます。`);
+            }
+        }
+        
+        if (!hasAccountingData) {
             errors.push('会計データが見つかりません');
         }
         
-        if (!data.stores || !Array.isArray(data.stores)) {
-            errors.push('店舗データが見つかりません');
+        // 店舗データの確認（より柔軟に）
+        let hasStoreData = false;
+        if (data.stores && Array.isArray(data.stores)) {
+            hasStoreData = true;
+            console.log('店舗データが見つかりました:', data.stores.length, '件');
+        } else {
+            warnings.push('店舗データが見つかりません。現在の店舗設定を使用します。');
         }
         
-        return { valid: errors.length === 0, errors };
+        return { 
+            valid: errors.length === 0, 
+            errors, 
+            warnings,
+            hasAccountingData,
+            hasStoreData
+        };
     }
 
     /**

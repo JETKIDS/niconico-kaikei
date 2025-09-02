@@ -101,7 +101,7 @@ header h1 {
     letter-spacing: 0.5px;
     position: relative;
     overflow: hidden;
-    
+
     /* モダンブラウザ用の拡張スタイル */
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
     border: 1px solid rgba(255, 215, 0, 0.5);
@@ -134,13 +134,13 @@ header h1 {
     background: #8a2828;
     color: #fff;
     border-color: #ffd700;
-    
+
     /* モダンブラウザ用の拡張ホバー効果 */
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.25));
     transform: translateY(-4px) scale(1.02);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35), 
-                0 4px 8px rgba(255, 215, 0, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35),
+        0 4px 8px rgba(255, 215, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 215, 0, 0.9);
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
 }
@@ -187,8 +187,8 @@ header h1 {
 
 .manual-button:active {
     transform: translateY(-2px) scale(0.98);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25), 
-                inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25),
+        inset 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: all 0.1s ease;
 }
 
@@ -250,6 +250,7 @@ header h1 {
 
 /* アニメーション無効化設定への対応 */
 @media (prefers-reduced-motion: reduce) {
+
     .manual-button,
     .manual-button-icon,
     .manual-button-text {
@@ -3116,7 +3117,8 @@ footer {
     }
 }
 
-/ * 統合レポート用スタイル */ .report-mode-selector {
+/* 統合レポート用スタイル */
+.report-mode-selector {
     display: flex;
     align-items: center;
     gap: 0.8rem;
@@ -3352,7 +3354,8 @@ footer {
     }
 }
 
-/ * 簡単データ共有用スタイル */ .easy-sharing-controls {
+/* 簡単データ共有用スタイル */
+.easy-sharing-controls {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
@@ -4206,6 +4209,7 @@ footer {
 
 /* レスポンシブ対応 */
 @media (max-width: 1024px) {
+
     /* タブレット対応 */
     .manual-button {
         font-size: 0.85rem;
@@ -4216,6 +4220,7 @@ footer {
 }
 
 @media (max-width: 768px) {
+
     /* モバイル対応 */
     .manual-button {
         position: static;
@@ -4256,6 +4261,7 @@ footer {
 }
 
 @media (max-width: 480px) {
+
     /* 小画面モバイル対応 */
     .manual-button {
         font-size: 0.75rem;
@@ -4284,8 +4290,13 @@ footer {
 }
 
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* ポップアップブロック対応ダイアログ */
@@ -4358,19 +4369,19 @@ footer {
         width: 95%;
         max-width: none;
     }
-    
+
     .solution-options {
         gap: 0.75rem;
     }
-    
+
     .solution-option {
         padding: 0.75rem;
     }
-    
+
     .solution-option h5 {
         font-size: 0.9rem;
     }
-    
+
     .browser-instructions {
         font-size: 0.8rem;
     }
@@ -4381,10 +4392,15 @@ footer {
     .manual-button.loading .manual-button-icon {
         animation: none;
     }
-    
+
     @keyframes spin {
-        from { transform: none; }
-        to { transform: none; }
+        from {
+            transform: none;
+        }
+
+        to {
+            transform: none;
+        }
     }
 }
 
@@ -4444,7 +4460,9 @@ footer {
     gap: 1rem;
 }
 
-.export-info, .import-warning, .backup-info {
+.export-info,
+.import-warning,
+.backup-info {
     padding: 0.5rem;
     border-radius: 4px;
     background: #f5f0e8;
@@ -4573,23 +4591,23 @@ footer {
     .backup-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .backup-table-header,
     .backup-table-row {
         grid-template-columns: 1fr;
         gap: 0.5rem;
     }
-    
-    .backup-table-header > div,
-    .backup-table-row > div {
+
+    .backup-table-header>div,
+    .backup-table-row>div {
         padding: 0.25rem 0;
     }
-    
+
     .backup-actions {
         justify-content: center;
         margin-top: 0.5rem;
     }
-    
+
     .backup-section {
         padding: 1rem;
     }

@@ -1668,7 +1668,7 @@ class UIManager {
                                 this.showStoreManagement();
                                 break;
                             case 'backup':
-                                this.showBackupManagement();
+                                this.showBackupSection();
                                 break;
                             default:
                                 this.showDataManagement('売上管理', 'sales');
@@ -4840,14 +4840,22 @@ class UIManager {
                     <div class="backup-card">
                         <div class="card-header">
                             <h3>📤 データエクスポート</h3>
-                            <p>全データをJSONファイルとしてダウンロード</p>
+                            <p>データをJSONファイルとしてダウンロード</p>
                         </div>
                         <div class="card-content">
-                            <button class="btn btn-primary" onclick="uiManager.exportData()">
-                                データをエクスポート
-                            </button>
+                            <div class="export-options">
+                                <button class="btn btn-primary" onclick="uiManager.exportData()">
+                                    全店舗データをエクスポート
+                                </button>
+                                <button class="btn btn-secondary" onclick="uiManager.exportCurrentStoreData()">
+                                    現在の店舗のみエクスポート
+                                </button>
+                                <button class="btn btn-outline" onclick="uiManager.showStoreSelectExportDialog()">
+                                    店舗を選択してエクスポート
+                                </button>
+                            </div>
                             <div class="export-info">
-                                <small>売上、仕入れ、店舗情報などすべてのデータが含まれます</small>
+                                <small>💡 店舗ごとのエクスポートでは、選択した店舗のデータのみが含まれます</small>
                             </div>
                         </div>
                     </div>
@@ -4899,6 +4907,9 @@ class UIManager {
                             <button class="btn btn-outline" onclick="uiManager.refreshBackupList()">
                                 一覧を更新
                             </button>
+                            <button class="btn btn-warning" onclick="uiManager.showDuplicateCleanupDialog()">
+                                重複データをクリーンアップ
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -4912,12 +4923,17 @@ class UIManager {
 
         contentArea.innerHTML = html;
         
+        console.log('showBackupSection: HTML set, calling refreshBackupList...');
+        
         // バックアップ一覧を初期表示
-        this.refreshBackupList();
+        setTimeout(() => {
+            console.log('showBackupSection: About to call refreshBackupList');
+            this.refreshBackupList();
+        }, 100);
     }
 
     /**
-     * データエクスポート実行
+     * データエクスポート実行（全店舗）
      */
     async exportData() {
         try {
@@ -4925,13 +4941,13 @@ class UIManager {
                 throw new Error('BackupManagerが初期化されていません');
             }
 
-            this.showBackupResult('データをエクスポート中...', 'info');
+            this.showBackupResult('全店舗データをエクスポート中...', 'info');
             
             const result = await window.backupManager.exportAllData();
             
             if (result.success) {
                 this.showBackupResult(
-                    `✓ エクスポート完了！<br>ファイル名: ${result.filename}<br>レコード数: ${result.recordCount}件`,
+                    `✓ 全店舗エクスポート完了！<br>ファイル名: ${result.filename}<br>レコード数: ${result.recordCount}件`,
                     'success'
                 );
             } else {
@@ -4945,26 +4961,273 @@ class UIManager {
     }
 
     /**
+     * 現在の店舗データのみエクスポート
+     */
+    async exportCurrentStoreData() {
+        try {
+            const activeStore = window.storeManager.getActiveStore();
+            
+            if (!activeStore) {
+                this.showBackupResult('❌ 店舗が選択されていません', 'error');
+                return;
+            }
+
+            this.showBackupResult(`${activeStore.name}のデータをエクスポート中...`, 'info');
+            
+            const exportData = this.generateStoreExportData(activeStore.id);
+            const filename = `${activeStore.name}_全データ_${new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')}.json`;
+            
+            this.downloadJSON(exportData, filename);
+            
+            this.showBackupResult(
+                `✓ ${activeStore.name}のエクスポート完了！<br>ファイル名: ${filename}<br>レコード数: ${exportData.exportInfo.totalRecords}件`,
+                'success'
+            );
+            
+        } catch (error) {
+            console.error('店舗エクスポートエラー:', error);
+            this.showBackupResult(`❌ エクスポートに失敗しました: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * 店舗選択エクスポートダイアログ表示
+     */
+    showStoreSelectExportDialog() {
+        const stores = window.storeManager.getStores();
+        
+        if (stores.length === 0) {
+            this.showBackupResult('❌ 店舗が登録されていません', 'error');
+            return;
+        }
+
+        const dialogHTML = `
+            <div class="modal-overlay" id="store-select-export-modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>🏪 店舗選択エクスポート</h3>
+                        <button class="close-btn" onclick="uiManager.hideStoreSelectExportDialog()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>エクスポートする店舗を選択してください：</p>
+                        <div class="store-selection">
+                            ${stores.map(store => `
+                                <label class="store-option">
+                                    <input type="radio" name="export-store" value="${store.id}">
+                                    <span class="store-name">${store.name}</span>
+                                    <span class="store-description">${store.description || ''}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                        <div class="export-options-section">
+                            <h4>エクスポート範囲：</h4>
+                            <label class="export-range-option">
+                                <input type="radio" name="export-range" value="all" checked>
+                                全期間のデータ
+                            </label>
+                            <label class="export-range-option">
+                                <input type="radio" name="export-range" value="current-year">
+                                今年のデータのみ
+                            </label>
+                            <label class="export-range-option">
+                                <input type="radio" name="export-range" value="custom">
+                                期間を指定
+                            </label>
+                            <div id="custom-date-range" style="display: none; margin-top: 10px;">
+                                <div class="date-range-inputs">
+                                    <div>
+                                        <label>開始:</label>
+                                        <select id="start-year">${this.generateYearOptions()}</select>
+                                        <select id="start-month">${this.generateMonthOptions()}</select>
+                                    </div>
+                                    <div>
+                                        <label>終了:</label>
+                                        <select id="end-year">${this.generateYearOptions()}</select>
+                                        <select id="end-month">${this.generateMonthOptions()}</select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" onclick="uiManager.executeStoreSelectExport()">エクスポート実行</button>
+                        <button class="btn btn-secondary" onclick="uiManager.hideStoreSelectExportDialog()">キャンセル</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+        
+        // 期間指定の表示切り替え
+        document.querySelectorAll('input[name="export-range"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const customRange = document.getElementById('custom-date-range');
+                if (e.target.value === 'custom') {
+                    customRange.style.display = 'block';
+                } else {
+                    customRange.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    /**
+     * 店舗選択エクスポートダイアログを閉じる
+     */
+    hideStoreSelectExportDialog() {
+        const modal = document.getElementById('store-select-export-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    /**
+     * 店舗選択エクスポート実行
+     */
+    async executeStoreSelectExport() {
+        try {
+            const selectedStoreId = document.querySelector('input[name="export-store"]:checked')?.value;
+            const selectedRange = document.querySelector('input[name="export-range"]:checked')?.value;
+            
+            if (!selectedStoreId) {
+                this.showBackupResult('❌ 店舗を選択してください', 'error');
+                return;
+            }
+            
+            const store = window.storeManager.getStoreById(selectedStoreId);
+            if (!store) {
+                this.showBackupResult('❌ 選択された店舗が見つかりません', 'error');
+                return;
+            }
+            
+            let startYear, startMonth, endYear, endMonth;
+            const currentYear = new Date().getFullYear();
+            
+            switch (selectedRange) {
+                case 'all':
+                    startYear = 2000;
+                    startMonth = 1;
+                    endYear = 2100;
+                    endMonth = 12;
+                    break;
+                case 'current-year':
+                    startYear = currentYear;
+                    startMonth = 1;
+                    endYear = currentYear;
+                    endMonth = 12;
+                    break;
+                case 'custom':
+                    startYear = parseInt(document.getElementById('start-year').value);
+                    startMonth = parseInt(document.getElementById('start-month').value);
+                    endYear = parseInt(document.getElementById('end-year').value);
+                    endMonth = parseInt(document.getElementById('end-month').value);
+                    
+                    if (startYear > endYear || (startYear === endYear && startMonth > endMonth)) {
+                        this.showBackupResult('❌ 開始日が終了日より後になっています', 'error');
+                        return;
+                    }
+                    break;
+            }
+            
+            this.showBackupResult(`${store.name}のデータをエクスポート中...`, 'info');
+            
+            const exportData = this.generateExportData(startYear, startMonth, endYear, endMonth, selectedStoreId);
+            
+            let periodText = '';
+            if (selectedRange === 'all') {
+                periodText = '全データ';
+            } else if (selectedRange === 'current-year') {
+                periodText = `${currentYear}年`;
+            } else {
+                periodText = `${startYear}年${startMonth}月-${endYear}年${endMonth}月`;
+            }
+            
+            const filename = `${store.name}_${periodText}_${new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')}.json`;
+            
+            this.downloadJSON(exportData, filename);
+            this.hideStoreSelectExportDialog();
+            
+            this.showBackupResult(
+                `✓ ${store.name}のエクスポート完了！<br>期間: ${periodText}<br>ファイル名: ${filename}<br>レコード数: ${exportData.exportInfo.totalRecords}件`,
+                'success'
+            );
+            
+        } catch (error) {
+            console.error('店舗選択エクスポートエラー:', error);
+            this.showBackupResult(`❌ エクスポートに失敗しました: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * 店舗エクスポートデータ生成（全期間）
+     */
+    generateStoreExportData(storeId) {
+        return this.generateExportData(2000, 1, 2100, 12, storeId);
+    }
+
+    /**
      * インポートファイル処理
      */
-    async handleImportFile(input) {
-        const file = input.files[0];
-        if (!file) return;
+    async handleImportFile(inputOrFile) {
+        console.log('handleImportFile called with:', inputOrFile);
+        
+        let file;
+        
+        // 引数がFileオブジェクトかinput要素かを判定
+        if (inputOrFile instanceof File) {
+            // 直接Fileオブジェクトが渡された場合
+            file = inputOrFile;
+            console.log('Direct file object received');
+        } else if (inputOrFile && inputOrFile.files && inputOrFile.files.length > 0) {
+            // input要素が渡された場合
+            file = inputOrFile.files[0];
+            console.log('File from input element');
+        } else {
+            console.log('ファイルが選択されていません');
+            this.showBackupResult('ファイルが選択されていません', 'warning');
+            return;
+        }
+
+        console.log('インポートファイル:', file.name, file.type, file.size);
 
         try {
             if (!window.backupManager) {
+                console.error('BackupManager not available:', typeof window.backupManager);
                 throw new Error('BackupManagerが初期化されていません');
             }
 
             this.showBackupResult('データをインポート中...', 'info');
             
-            const result = await window.backupManager.importData(file);
+            // ファイル内容を事前に確認
+            const fileContent = await this.readFileAsText(file);
+            console.log('ファイル内容（最初の500文字）:', fileContent.substring(0, 500));
             
-            if (result.success) {
-                let message = `✓ インポート完了！<br>インポート件数: ${result.importedRecords}件`;
+            let parsedData;
+            try {
+                parsedData = JSON.parse(fileContent);
+                console.log('パースされたデータの構造:', Object.keys(parsedData));
+                console.log('データの詳細:', parsedData);
+            } catch (parseError) {
+                throw new Error('JSONファイルの解析に失敗しました: ' + parseError.message);
+            }
+            
+            const result = await window.backupManager.importData(file);
+            console.log('インポート結果:', result);
+            
+            if (result && result.success) {
+                let message = `✓ インポート完了！<br>新規追加: ${result.importedRecords || 0}件`;
                 
-                if (result.hasErrors && result.errors.length > 0) {
-                    message += `<br>⚠️ 一部エラー: ${result.errors.length}件`;
+                if (result.skippedRecords > 0) {
+                    message += `<br>重複スキップ: ${result.skippedRecords}件`;
+                }
+                
+                if (result.hasErrors && result.errors && result.errors.length > 0) {
+                    message += `<br>⚠️ エラー: ${result.errors.length}件`;
+                }
+                
+                if (result.totalRecords) {
+                    message += `<br>総件数: ${result.totalRecords}件`;
                 }
                 
                 this.showBackupResult(message, result.hasErrors ? 'warning' : 'success');
@@ -4983,7 +5246,10 @@ class UIManager {
             this.showBackupResult(`❌ インポートに失敗しました: ${error.message}`, 'error');
         } finally {
             // ファイル入力をリセット
-            input.value = '';
+            const inputElement = document.getElementById('import-file');
+            if (inputElement) {
+                inputElement.value = '';
+            }
         }
     }
 
@@ -5017,16 +5283,39 @@ class UIManager {
      * バックアップ一覧更新
      */
     refreshBackupList() {
+        console.log('refreshBackupList called');
         const listContainer = document.getElementById('backup-list');
-        if (!listContainer || !window.backupManager) return;
+        console.log('backup-list element:', listContainer);
+        
+        if (!listContainer) {
+            console.warn('backup-list要素が見つかりません');
+            return;
+        }
+        
+        if (!window.backupManager) {
+            console.warn('BackupManagerが初期化されていません');
+            listContainer.innerHTML = '<p class="no-backups">⚠️ バックアップ機能が利用できません</p>';
+            return;
+        }
 
-        const backups = window.backupManager.getBackupList();
+        console.log('BackupManager available, getting backup list...');
+        let backups;
+        try {
+            backups = window.backupManager.getBackupList();
+            console.log('Backup list retrieved:', backups);
+        } catch (error) {
+            console.error('getBackupList error:', error);
+            listContainer.innerHTML = '<p class="no-backups">❌ バックアップ一覧の取得に失敗しました</p>';
+            return;
+        }
         
         if (backups.length === 0) {
+            console.log('No backups found, showing empty message');
             listContainer.innerHTML = '<p class="no-backups">バックアップがありません</p>';
             return;
         }
 
+        console.log('Generating HTML for', backups.length, 'backups');
         let html = '<div class="backup-table">';
         html += `
             <div class="backup-table-header">
@@ -5065,7 +5354,9 @@ class UIManager {
         });
 
         html += '</div>';
+        console.log('Setting HTML content:', html.substring(0, 200) + '...');
         listContainer.innerHTML = html;
+        console.log('HTML content set successfully');
     }
 
     /**
@@ -5139,7 +5430,6 @@ class UIManager {
             }, 5000);
         }
     }
-}
 
     /**
      * データ移動時の重複確認ダイアログ表示
@@ -5416,54 +5706,421 @@ class UIManager {
         };
         return categoryNames[category] || category;
     }
-}  
-              }, 2000);
-                
-            } else {
-                throw new Error(result.error);
-            }
-            
-        } catch (error) {
-            console.error('復元エラー:', error);
-            this.showBackupResult(`❌ 復元に失敗しました: ${error.message}`, 'error');
+
+    /**
+     * エクスポートドロップダウンの表示切り替え
+     */
+    toggleExportDropdown() {
+        const dropdown = document.getElementById('export-dropdown-menu');
+        if (dropdown) {
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
         }
     }
 
     /**
-     * バックアップ削除
+     * 現在の月をエクスポート
      */
-    deleteBackup(backupKey) {
-        if (!confirm('このバックアップを削除しますか？')) {
+    async exportCurrentMonth() {
+        try {
+            const globalDate = window.app.getGlobalDate();
+            const activeStore = window.storeManager.getActiveStore();
+            
+            if (!activeStore) {
+                this.showMessage('店舗が選択されていません', 'error');
+                return;
+            }
+
+            const exportData = this.generateExportData(globalDate.year, globalDate.month, globalDate.year, globalDate.month, activeStore.id);
+            const filename = `${activeStore.name}_${globalDate.year}年${globalDate.month}月_収支データ.json`;
+            
+            this.downloadJSON(exportData, filename);
+            this.showMessage(`${globalDate.year}年${globalDate.month}月のデータをエクスポートしました`, 'success');
+            
+        } catch (error) {
+            console.error('月次エクスポートエラー:', error);
+            this.showMessage('エクスポートに失敗しました: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * 現在の年をエクスポート
+     */
+    async exportCurrentYear() {
+        try {
+            const globalDate = window.app.getGlobalDate();
+            const activeStore = window.storeManager.getActiveStore();
+            
+            if (!activeStore) {
+                this.showMessage('店舗が選択されていません', 'error');
+                return;
+            }
+
+            const exportData = this.generateExportData(globalDate.year, 1, globalDate.year, 12, activeStore.id);
+            const filename = `${activeStore.name}_${globalDate.year}年_収支データ.json`;
+            
+            this.downloadJSON(exportData, filename);
+            this.showMessage(`${globalDate.year}年のデータをエクスポートしました`, 'success');
+            
+        } catch (error) {
+            console.error('年次エクスポートエラー:', error);
+            this.showMessage('エクスポートに失敗しました: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * 全データエクスポート（現在の店舗のみ）
+     */
+    async exportAllData() {
+        try {
+            const activeStore = window.storeManager.getActiveStore();
+            
+            if (!activeStore) {
+                this.showMessage('店舗が選択されていません', 'error');
+                return;
+            }
+
+            const exportData = this.generateExportData(2000, 1, 2100, 12, activeStore.id);
+            const filename = `${activeStore.name}_全データ.json`;
+            
+            this.downloadJSON(exportData, filename);
+            this.showMessage(`${activeStore.name}の全データをエクスポートしました`, 'success');
+            
+        } catch (error) {
+            console.error('全データエクスポートエラー:', error);
+            this.showMessage('エクスポートに失敗しました: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * カスタムエクスポートダイアログ表示
+     */
+    showCustomExportDialog() {
+        const activeStore = window.storeManager.getActiveStore();
+        
+        if (!activeStore) {
+            this.showMessage('店舗が選択されていません', 'error');
             return;
         }
 
-        try {
-            localStorage.removeItem(backupKey);
-            this.showBackupResult('✓ バックアップを削除しました', 'success');
-            this.refreshBackupList();
-            
-        } catch (error) {
-            console.error('バックアップ削除エラー:', error);
-            this.showBackupResult(`❌ バックアップ削除に失敗しました: ${error.message}`, 'error');
+        const dialogHTML = `
+            <div class="modal-overlay" id="custom-export-modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>📊 期間指定エクスポート</h3>
+                        <button class="close-btn" onclick="uiManager.hideCustomExportDialog()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="current-store-info">
+                            <p><strong>対象店舗:</strong> ${activeStore.name}</p>
+                        </div>
+                        <div class="date-range-selector">
+                            <div class="date-group">
+                                <label>開始年月:</label>
+                                <select id="export-start-year">
+                                    ${this.generateYearOptions()}
+                                </select>
+                                <select id="export-start-month">
+                                    ${this.generateMonthOptions()}
+                                </select>
+                            </div>
+                            <div class="date-group">
+                                <label>終了年月:</label>
+                                <select id="export-end-year">
+                                    ${this.generateYearOptions()}
+                                </select>
+                                <select id="export-end-month">
+                                    ${this.generateMonthOptions()}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" onclick="uiManager.executeCustomExport()">エクスポート実行</button>
+                        <button class="btn btn-secondary" onclick="uiManager.hideCustomExportDialog()">キャンセル</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+    }
+
+    /**
+     * カスタムエクスポートダイアログを閉じる
+     */
+    hideCustomExportDialog() {
+        const modal = document.getElementById('custom-export-modal');
+        if (modal) {
+            modal.remove();
         }
     }
 
     /**
-     * バックアップ結果表示
+     * カスタムエクスポート実行
      */
-    showBackupResult(message, type = 'info') {
-        const resultDiv = document.getElementById('backup-result');
-        if (!resultDiv) return;
+    async executeCustomExport() {
+        try {
+            const startYear = parseInt(document.getElementById('export-start-year').value);
+            const startMonth = parseInt(document.getElementById('export-start-month').value);
+            const endYear = parseInt(document.getElementById('export-end-year').value);
+            const endMonth = parseInt(document.getElementById('export-end-month').value);
+            const activeStore = window.storeManager.getActiveStore();
 
-        resultDiv.className = `backup-result ${type}`;
-        resultDiv.innerHTML = message;
-        resultDiv.style.display = 'block';
+            if (startYear > endYear || (startYear === endYear && startMonth > endMonth)) {
+                this.showMessage('開始日が終了日より後になっています', 'error');
+                return;
+            }
 
-        // 成功・エラーメッセージは5秒後に自動で隠す
-        if (type === 'success' || type === 'error') {
-            setTimeout(() => {
-                resultDiv.style.display = 'none';
-            }, 5000);
+            const exportData = this.generateExportData(startYear, startMonth, endYear, endMonth, activeStore.id);
+            const filename = `${activeStore.name}_${startYear}年${startMonth}月-${endYear}年${endMonth}月_収支データ.json`;
+            
+            this.downloadJSON(exportData, filename);
+            this.hideCustomExportDialog();
+            this.showMessage(`${startYear}年${startMonth}月から${endYear}年${endMonth}月のデータをエクスポートしました`, 'success');
+            
+        } catch (error) {
+            console.error('カスタムエクスポートエラー:', error);
+            this.showMessage('エクスポートに失敗しました: ' + error.message, 'error');
         }
+    }
+
+    /**
+     * エクスポートデータ生成
+     */
+    generateExportData(startYear, startMonth, endYear, endMonth, storeId) {
+        const categories = ['sales', 'purchases', 'fixedCosts', 'variableCosts', 
+                          'laborCosts', 'consumptionTax', 'monthlyPayments', 'manufacturerDeposits'];
+        
+        const exportData = {};
+        
+        categories.forEach(category => {
+            const allData = this.dataManager.getDataByCategory(category);
+            const filteredData = allData.filter(record => {
+                // 店舗フィルター
+                if (record.storeId !== storeId) return false;
+                
+                // 期間フィルター
+                const recordDate = record.year * 100 + record.month;
+                const startDate = startYear * 100 + startMonth;
+                const endDate = endYear * 100 + endMonth;
+                
+                return recordDate >= startDate && recordDate <= endDate;
+            });
+            
+            exportData[category] = filteredData;
+        });
+        
+        // エクスポート情報を追加
+        const activeStore = window.storeManager.getStoreById(storeId);
+        exportData.exportInfo = {
+            exportDate: new Date().toISOString(),
+            storeId: storeId,
+            storeName: activeStore ? activeStore.name : '不明',
+            period: {
+                start: { year: startYear, month: startMonth },
+                end: { year: endYear, month: endMonth }
+            },
+            totalRecords: Object.values(exportData).reduce((total, records) => {
+                return total + (Array.isArray(records) ? records.length : 0);
+            }, 0)
+        };
+        
+        return exportData;
+    }
+
+    /**
+     * 年オプション生成
+     */
+    generateYearOptions() {
+        const currentYear = new Date().getFullYear();
+        let options = '';
+        for (let year = currentYear - 5; year <= currentYear + 2; year++) {
+            const selected = year === currentYear ? 'selected' : '';
+            options += `<option value="${year}" ${selected}>${year}年</option>`;
+        }
+        return options;
+    }
+
+    /**
+     * 月オプション生成
+     */
+    generateMonthOptions() {
+        const currentMonth = new Date().getMonth() + 1;
+        let options = '';
+        for (let month = 1; month <= 12; month++) {
+            const selected = month === currentMonth ? 'selected' : '';
+            options += `<option value="${month}" ${selected}>${month}月</option>`;
+        }
+        return options;
+    }
+
+    /**
+     * JSONファイルダウンロード
+     */
+    downloadJSON(data, filename) {
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+    }
+
+    /**
+     * 重複データクリーンアップダイアログ表示
+     */
+    showDuplicateCleanupDialog() {
+        const dialogHTML = `
+            <div class="modal-overlay" id="duplicate-cleanup-modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>🧹 重複データクリーンアップ</h3>
+                        <button class="close-btn" onclick="uiManager.hideDuplicateCleanupDialog()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>同じ年月・金額・店舗の重複データを検出して削除します。</p>
+                        <p><strong>⚠️ この操作は元に戻せません。事前にバックアップを作成することをお勧めします。</strong></p>
+                        <div id="duplicate-scan-result" style="margin-top: 15px;">
+                            <!-- スキャン結果がここに表示される -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="uiManager.scanDuplicates()">重複をスキャン</button>
+                        <button class="btn btn-danger" onclick="uiManager.cleanupDuplicates()" id="cleanup-btn" disabled>重複を削除</button>
+                        <button class="btn btn-outline" onclick="uiManager.hideDuplicateCleanupDialog()">閉じる</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+    }
+
+    /**
+     * 重複データクリーンアップダイアログを閉じる
+     */
+    hideDuplicateCleanupDialog() {
+        const modal = document.getElementById('duplicate-cleanup-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    /**
+     * 重複データをスキャン
+     */
+    scanDuplicates() {
+        const resultDiv = document.getElementById('duplicate-scan-result');
+        if (!resultDiv) return;
+        
+        resultDiv.innerHTML = '<p>スキャン中...</p>';
+        
+        const categories = ['sales', 'purchases', 'fixedCosts', 'variableCosts', 
+                          'laborCosts', 'consumptionTax', 'monthlyPayments', 'manufacturerDeposits'];
+        
+        let totalDuplicates = 0;
+        let duplicatesByCategory = {};
+        
+        categories.forEach(category => {
+            const data = this.dataManager.getDataByCategory(category);
+            const duplicates = [];
+            
+            for (let i = 0; i < data.length; i++) {
+                for (let j = i + 1; j < data.length; j++) {
+                    const record1 = data[i];
+                    const record2 = data[j];
+                    
+                    if (record1.year === record2.year && 
+                        record1.month === record2.month && 
+                        record1.amount === record2.amount && 
+                        record1.storeId === record2.storeId) {
+                        duplicates.push({ index: j, record: record2 });
+                    }
+                }
+            }
+            
+            if (duplicates.length > 0) {
+                duplicatesByCategory[category] = duplicates;
+                totalDuplicates += duplicates.length;
+            }
+        });
+        
+        window.duplicateData = duplicatesByCategory;
+        
+        if (totalDuplicates > 0) {
+            let html = `<div class="duplicate-results">
+                <h4>🔍 重複データが見つかりました: ${totalDuplicates}件</h4>
+                <ul>`;
+            
+            Object.entries(duplicatesByCategory).forEach(([category, duplicates]) => {
+                const categoryName = this.getCategoryDisplayName(category);
+                html += `<li>${categoryName}: ${duplicates.length}件</li>`;
+            });
+            
+            html += `</ul></div>`;
+            resultDiv.innerHTML = html;
+            
+            document.getElementById('cleanup-btn').disabled = false;
+        } else {
+            resultDiv.innerHTML = '<p class="success">✓ 重複データは見つかりませんでした。</p>';
+        }
+    }
+
+    /**
+     * 重複データをクリーンアップ
+     */
+    async cleanupDuplicates() {
+        if (!window.duplicateData || !confirm('重複データを削除しますか？この操作は元に戻せません。')) {
+            return;
+        }
+        
+        const resultDiv = document.getElementById('duplicate-scan-result');
+        resultDiv.innerHTML = '<p>削除中...</p>';
+        
+        let deletedCount = 0;
+        
+        try {
+            for (const [category, duplicates] of Object.entries(window.duplicateData)) {
+                // インデックスの大きい順に削除（配列の変更による影響を避けるため）
+                duplicates.sort((a, b) => b.index - a.index);
+                
+                for (const duplicate of duplicates) {
+                    await this.dataManager.deleteRecord(category, duplicate.record.id);
+                    deletedCount++;
+                }
+            }
+            
+            resultDiv.innerHTML = `<p class="success">✓ ${deletedCount}件の重複データを削除しました。</p>`;
+            
+            // 画面を更新
+            setTimeout(() => {
+                this.hideDuplicateCleanupDialog();
+                this.showSection(this.currentSection);
+            }, 2000);
+            
+        } catch (error) {
+            console.error('重複削除エラー:', error);
+            resultDiv.innerHTML = `<p class="error">❌ 削除中にエラーが発生しました: ${error.message}</p>`;
+        }
+    }
+
+    /**
+     * ファイルをテキストとして読み込み
+     */
+    readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(new Error('ファイル読み込みエラー'));
+            reader.readAsText(file);
+        });
     }
 }

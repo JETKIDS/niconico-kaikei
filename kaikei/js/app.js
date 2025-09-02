@@ -115,12 +115,23 @@ class App {
             
             // バックアップマネージャー初期化
             console.log('バックアップマネージャーを初期化中...');
+            console.log('BackupManager type check:', typeof BackupManager);
+            console.log('BackupManager exists:', typeof BackupManager !== 'undefined');
+            
             if (typeof BackupManager !== 'undefined') {
-                this.backupManager = new BackupManager(this.dataManager, this.storeManager);
-                window.backupManager = this.backupManager;
-                console.log('✓ BackupManager初期化完了');
+                try {
+                    this.backupManager = new BackupManager(this.dataManager, this.storeManager);
+                    window.backupManager = this.backupManager;
+                    console.log('✓ BackupManager初期化完了');
+                    console.log('BackupManager methods:', Object.getOwnPropertyNames(BackupManager.prototype));
+                } catch (error) {
+                    console.error('BackupManager初期化エラー:', error);
+                    window.backupManager = null;
+                }
             } else {
                 console.warn('BackupManagerクラスが見つかりません');
+                console.log('Available global objects:', Object.keys(window).filter(key => key.includes('Manager')));
+                window.backupManager = null;
             }
 
             // グローバル変数として設定（他のスクリプトからアクセス可能にする）
@@ -634,44 +645,8 @@ class App {
 
         this.currentSection = section;
 
-        switch (section) {
-            case 'sales':
-                this.uiManager.showSalesSection();
-                break;
-            case 'purchases':
-                this.uiManager.showPurchasesSection();
-                break;
-            case 'fixed-costs':
-                this.uiManager.showFixedCostsSection();
-                break;
-            case 'variable-costs':
-                this.uiManager.showVariableCostsSection();
-                break;
-            case 'labor-costs':
-                this.uiManager.showLaborCostsSection();
-                break;
-            case 'consumption-tax':
-                this.uiManager.showConsumptionTaxSection();
-                break;
-            case 'monthly-payments':
-                this.uiManager.showMonthlyPaymentsSection();
-                break;
-            case 'manufacturer-deposits':
-                this.uiManager.showManufacturerDepositsSection();
-                break;
-            case 'reports':
-                this.uiManager.showReportsSection();
-                break;
-            case 'stores':
-                this.uiManager.showStoresSection();
-                break;
-            case 'backup':
-                this.uiManager.showBackupSection();
-                break;
-            default:
-                console.warn('未知のセクション:', section);
-                this.uiManager.showSalesSection();
-        }
+        // UIManagerのshowSectionメソッドを使用
+        this.uiManager.showSection(section);
     }
 }
 
