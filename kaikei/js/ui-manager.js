@@ -4815,6 +4815,9 @@ class UIManager {
             this.recordDataMoveHistory(category, recordIds, targetStoreId, reason, movedCount, errors);
 
             // 結果表示
+            console.log(`データ移動完了: ${movedCount}件移動`);
+        } catch (error) {
+            console.error('データ移動処理エラー:', error);
         }
     }
 
